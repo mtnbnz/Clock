@@ -1,12 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
     Copyright (C) 2016 The Android Open Source Project
     modified
     SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
 -->
 
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -20,11 +18,40 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent">
 
-        <androidx.constraintlayout.widget.Guideline android:orientation="horizontal" android:id="@+id/row_0_bottom" android:layout_width="wrap_content" android:layout_height="wrap_content" app:layout_constraintGuide_percent="0.25" />
-        <androidx.constraintlayout.widget.Guideline android:orientation="horizontal" android:id="@+id/row_1_bottom" android:layout_width="wrap_content" android:layout_height="wrap_content" app:layout_constraintGuide_percent="0.5" />
-        <androidx.constraintlayout.widget.Guideline android:orientation="horizontal" android:id="@+id/row_2_bottom" android:layout_width="wrap_content" android:layout_height="wrap_content" app:layout_constraintGuide_percent="0.75" />
-        <androidx.constraintlayout.widget.Guideline android:orientation="vertical" android:id="@+id/column_0_right" android:layout_width="wrap_content" android:layout_height="wrap_content" app:layout_constraintGuide_percent="0.3333" />
-        <androidx.constraintlayout.widget.Guideline android:orientation="vertical" android:id="@+id/column_1_right" android:layout_width="wrap_content" android:layout_height="wrap_content" app:layout_constraintGuide_percent="0.6666" />
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/row_0_bottom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            app:layout_constraintGuide_percent="0.25" />
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/row_1_bottom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            app:layout_constraintGuide_percent="0.5" />
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/row_2_bottom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            app:layout_constraintGuide_percent="0.75" />
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/column_0_right"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.3333" />
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/column_1_right"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.6666" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/timer_setup_digit_1"
@@ -32,10 +59,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:text="1"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/column_0_right"
-            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toTopOf="@id/row_0_bottom"
+            app:layout_constraintEnd_toStartOf="@id/column_0_right"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
             tools:ignore="HardcodedText" />
 
         <com.google.android.material.button.MaterialButton
@@ -44,10 +71,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:text="2"
-            app:layout_constraintStart_toEndOf="@id/column_0_right"
-            app:layout_constraintEnd_toStartOf="@id/column_1_right"
-            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="@id/row_0_bottom"
+            app:layout_constraintEnd_toStartOf="@id/column_1_right"
+            app:layout_constraintStart_toEndOf="@id/column_0_right"
+            app:layout_constraintTop_toTopOf="parent"
             tools:ignore="HardcodedText" />
 
         <com.google.android.material.button.MaterialButton
@@ -56,10 +83,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:text="3"
-            app:layout_constraintStart_toEndOf="@id/column_1_right"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="@id/row_0_bottom"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/column_1_right"
+            app:layout_constraintTop_toTopOf="parent"
             tools:ignore="HardcodedText" />
 
         <com.google.android.material.button.MaterialButton
@@ -68,10 +95,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:text="4"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/column_0_right"
-            app:layout_constraintTop_toBottomOf="@id/row_0_bottom"
             app:layout_constraintBottom_toTopOf="@id/row_1_bottom"
+            app:layout_constraintEnd_toStartOf="@id/column_0_right"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/row_0_bottom"
             tools:ignore="HardcodedText" />
 
         <com.google.android.material.button.MaterialButton
@@ -80,10 +107,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:text="5"
-            app:layout_constraintStart_toEndOf="@id/column_0_right"
-            app:layout_constraintEnd_toStartOf="@id/column_1_right"
-            app:layout_constraintTop_toBottomOf="@id/row_0_bottom"
             app:layout_constraintBottom_toTopOf="@id/row_1_bottom"
+            app:layout_constraintEnd_toStartOf="@id/column_1_right"
+            app:layout_constraintStart_toEndOf="@id/column_0_right"
+            app:layout_constraintTop_toBottomOf="@id/row_0_bottom"
             tools:ignore="HardcodedText" />
 
         <com.google.android.material.button.MaterialButton
@@ -92,10 +119,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:text="6"
-            app:layout_constraintStart_toEndOf="@id/column_1_right"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/row_0_bottom"
             app:layout_constraintBottom_toTopOf="@id/row_1_bottom"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/column_1_right"
+            app:layout_constraintTop_toBottomOf="@id/row_0_bottom"
             tools:ignore="HardcodedText" />
 
         <com.google.android.material.button.MaterialButton
@@ -104,10 +131,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:text="7"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/column_0_right"
-            app:layout_constraintTop_toBottomOf="@id/row_1_bottom"
             app:layout_constraintBottom_toTopOf="@id/row_2_bottom"
+            app:layout_constraintEnd_toStartOf="@id/column_0_right"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/row_1_bottom"
             tools:ignore="HardcodedText" />
 
         <com.google.android.material.button.MaterialButton
@@ -116,10 +143,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:text="8"
-            app:layout_constraintStart_toEndOf="@id/column_0_right"
-            app:layout_constraintEnd_toStartOf="@id/column_1_right"
-            app:layout_constraintTop_toBottomOf="@id/row_1_bottom"
             app:layout_constraintBottom_toTopOf="@id/row_2_bottom"
+            app:layout_constraintEnd_toStartOf="@id/column_1_right"
+            app:layout_constraintStart_toEndOf="@id/column_0_right"
+            app:layout_constraintTop_toBottomOf="@id/row_1_bottom"
             tools:ignore="HardcodedText" />
 
         <com.google.android.material.button.MaterialButton
@@ -128,10 +155,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:text="9"
-            app:layout_constraintStart_toEndOf="@id/column_1_right"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/row_1_bottom"
             app:layout_constraintBottom_toTopOf="@+id/row_2_bottom"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/column_1_right"
+            app:layout_constraintTop_toBottomOf="@id/row_1_bottom"
             tools:ignore="HardcodedText" />
 
         <com.google.android.material.button.MaterialButton
@@ -139,12 +166,12 @@
             style="@style/TimerSetupDigit"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            app:backgroundTint="?attr/colorPrimaryContainer"
             android:text="00"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/column_0_right"
-            app:layout_constraintTop_toBottomOf="@id/row_2_bottom"
+            app:backgroundTint="?attr/colorPrimaryContainer"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/column_0_right"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/row_2_bottom"
             tools:ignore="HardcodedText" />
 
         <com.google.android.material.button.MaterialButton
@@ -153,10 +180,10 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:text="0"
-            app:layout_constraintStart_toEndOf="@id/column_0_right"
-            app:layout_constraintEnd_toStartOf="@id/column_1_right"
-            app:layout_constraintTop_toBottomOf="@+id/row_2_bottom"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/column_1_right"
+            app:layout_constraintStart_toEndOf="@id/column_0_right"
+            app:layout_constraintTop_toBottomOf="@+id/row_2_bottom"
             tools:ignore="HardcodedText" />
 
         <com.google.android.material.button.MaterialButton
@@ -166,10 +193,10 @@
             android:layout_height="0dp"
             android:text="&#9003;"
             app:backgroundTint="?attr/colorPrimaryContainer"
-            app:layout_constraintStart_toEndOf="@id/column_1_right"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/row_2_bottom"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/column_1_right"
+            app:layout_constraintTop_toBottomOf="@id/row_2_bottom"
             tools:ignore="HardcodedText" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
