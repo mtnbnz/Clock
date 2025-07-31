@@ -1,17 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
     Copyright (C) 2016 The Android Open Source Project
     modified
     SPDX-License-Identifier: Apache-2.0 AND GPL-3.0-only
 -->
 
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/widgetItem"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    tools:background="@android:color/darker_gray">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -33,16 +32,12 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:paddingHorizontal="3dp"
                 android:baselineAligned="true"
                 android:gravity="center"
-                android:shadowRadius="2.75"
-                android:shadowColor="@android:color/black"
-                android:shadowDx="2"
-                android:shadowDy="2"
+                android:paddingHorizontal="3dp"
                 tools:text="01:23 AM"
-                tools:textSize="16sp"
-                tools:textColor="@android:color/white" />
+                tools:textColor="@android:color/white"
+                tools:textSize="16sp" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -61,15 +56,11 @@
                         android:id="@+id/cityNameLeft"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingHorizontal="3dp"
                         android:ellipsize="end"
                         android:includeFontPadding="false"
                         android:maxLines="1"
+                        android:paddingHorizontal="3dp"
                         android:textAllCaps="true"
-                        android:shadowRadius="2.75"
-                        android:shadowColor="@android:color/black"
-                        android:shadowDx="2"
-                        android:shadowDy="2"
                         tools:text="City1"
                         tools:textColor="@android:color/white" />
 
@@ -81,17 +72,14 @@
                     android:id="@+id/cityDayLeft"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingHorizontal="3dp"
                     android:ellipsize="none"
                     android:format12Hour="@string/abbrev_wday"
                     android:format24Hour="@string/abbrev_wday"
                     android:includeFontPadding="false"
                     android:maxLines="1"
-                    android:textAllCaps="true"
-                    android:shadowRadius="2.75"
+                    android:paddingHorizontal="3dp"
                     android:shadowColor="@android:color/black"
-                    android:shadowDx="2"
-                    android:shadowDy="2"
+                    android:textAllCaps="true"
                     tools:text="/ Mon"
                     tools:textColor="@android:color/white" />
 
@@ -112,17 +100,13 @@
                 android:id="@+id/rightClock"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingHorizontal="3dp"
                 android:layout_gravity="center"
                 android:baselineAligned="true"
                 android:gravity="center"
-                android:shadowRadius="2.75"
-                android:shadowColor="@android:color/black"
-                android:shadowDx="2"
-                android:shadowDy="2"
+                android:paddingHorizontal="3dp"
                 tools:text="01:23 AM"
-                tools:textSize="16sp"
-                tools:textColor="@android:color/white" />
+                tools:textColor="@android:color/white"
+                tools:textSize="16sp" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -141,15 +125,11 @@
                         android:id="@+id/cityNameRight"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingHorizontal="3dp"
                         android:ellipsize="end"
                         android:includeFontPadding="false"
                         android:maxLines="1"
+                        android:paddingHorizontal="3dp"
                         android:textAllCaps="true"
-                        android:shadowRadius="2.75"
-                        android:shadowColor="@android:color/black"
-                        android:shadowDx="2"
-                        android:shadowDy="2"
                         tools:text="City 2"
                         tools:textColor="@android:color/white" />
 
@@ -161,17 +141,13 @@
                     android:id="@+id/cityDayRight"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingHorizontal="3dp"
                     android:ellipsize="none"
                     android:format12Hour="@string/abbrev_wday"
                     android:format24Hour="@string/abbrev_wday"
                     android:includeFontPadding="false"
                     android:maxLines="1"
+                    android:paddingHorizontal="3dp"
                     android:textAllCaps="true"
-                    android:shadowRadius="2.75"
-                    android:shadowColor="@android:color/black"
-                    android:shadowDx="2"
-                    android:shadowDy="2"
                     tools:text="/ Mon"
                     tools:textColor="@android:color/white" />
 
