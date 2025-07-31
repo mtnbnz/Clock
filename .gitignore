@@ -34,3 +34,4 @@ google-services.json
 app/build
 app/release
 app/debug/
+.DS_Store
