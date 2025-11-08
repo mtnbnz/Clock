@@ -24,9 +24,9 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import com.best.deskclock.R;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.Timer;
+import com.best.deskclock.uicomponents.CircleButtonsLayout;
 import com.best.deskclock.utils.ThemeUtils;
 
-import com.best.deskclock.widget.CircleButtonsLayout;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.color.MaterialColors;
 
@@ -39,19 +39,13 @@ public class TimerItem extends ConstraintLayout {
 
     Context mContext;
 
-    /**
-     * The container of TimerCircleView and TimerTextController
-     */
+    /** The container of TimerCircleView and TimerTextController */
     private CircleButtonsLayout mCircleContainer;
 
-    /**
-     * Formats and displays the text in the timer.
-     */
+    /** Formats and displays the text in the timer. */
     private TimerTextController mTimerTextController;
 
-    /**
-     * Displays timer progress as a color circle that changes from white to red.
-     */
+    /** Displays timer progress as a color circle that changes from white to red. */
     private TimerCircleView mCircleView;
 
     /** Displays the remaining time or time since expiration. */
@@ -66,22 +60,16 @@ public class TimerItem extends ConstraintLayout {
     /** A button that adds time to the timer. */
     private MaterialButton mAddTimeButton;
 
-    /**
-     * Displays the label associated with the timer. Tapping it presents an edit dialog.
-     */
+    /** Displays the label associated with the timer. Tapping it presents an edit dialog. */
     private TextView mLabelView;
 
     /** A button to start / stop the timer */
     private MaterialButton mPlayPauseButton;
 
-    /**
-     * The last state of the timer that was rendered; used to avoid expensive operations.
-     */
+    /** The last state of the timer that was rendered; used to avoid expensive operations. */
     private Timer.State mLastState;
 
-    /**
-     * The timer duration text that appears when the timer is reset
-     */
+    /** The timer duration text that appears when the timer is reset */
     private TextView mTimerTotalDurationText;
 
     private boolean mIsTablet;
@@ -114,8 +102,8 @@ public class TimerItem extends ConstraintLayout {
         // Displays the remaining time or time since expiration.
         // Timer text serves as a virtual start/stop button.
         mTimerText = findViewById(R.id.timer_time_text);
-        final int colorAccent = MaterialColors.getColor(mContext,
-                com.google.android.material.R.attr.colorPrimary, Color.BLACK);
+        final int colorAccent = MaterialColors.getColor(
+                mContext, androidx.appcompat.R.attr.colorPrimary, Color.BLACK);
         final int textColorPrimary = mTimerText.getCurrentTextColor();
         final ColorStateList timeTextColor = new ColorStateList(
                 new int[][]{{-state_activated, -state_pressed}, {}},
@@ -139,20 +127,28 @@ public class TimerItem extends ConstraintLayout {
         mTimerTextController.setTimeString(timer.getRemainingTime());
 
         if (mCircleView != null) {
-            final boolean hideCircle = ((timer.isExpired() || timer.isMissed()) && blinkOff);
+            final boolean isBlinking = timer.isExpired() || timer.isMissed();
+            final float targetAlpha = isBlinking
+                    ? (blinkOff ? 0f : 1f)
+                    : 1f;
 
-            mCircleView.setVisibility(hideCircle ? INVISIBLE : VISIBLE);
+            // Apply circle blinking
+            mCircleView.animate()
+                    .alpha(targetAlpha)
+                    .setDuration(300)
+                    .start();
 
-            if (!hideCircle) {
+            // Update circle only if visible
+            if (!isBlinking || !blinkOff) {
                 mCircleView.update(timer);
             }
         }
 
-        if (!timer.isPaused() || !blinkOff || mTimerText.isPressed()) {
-            mTimerText.setAlpha(1f);
-        } else {
-            mTimerText.setAlpha(0f);
-        }
+        final float textTargetAlpha = (!timer.isPaused() || !blinkOff || mTimerText.isPressed()) ? 1f : 0f;
+        mTimerText.animate()
+                .alpha(textTargetAlpha)
+                .setDuration(200)
+                .start();
     }
 
     /**
@@ -180,6 +176,7 @@ public class TimerItem extends ConstraintLayout {
 
         // Initialize the circle
         if (mCircleView != null) {
+            mCircleView.setAlpha(1f);
             mCircleView.update(timer);
         }
 
@@ -309,6 +306,11 @@ public class TimerItem extends ConstraintLayout {
 
                     if (isTabletOrLandscapePhone() || isPhoneWithSingleTimer()) {
                         mTimerEditNewDurationButton.setVisibility(GONE);
+                    }
+
+                    if (isPortraitPhoneWithMultipleTimers()) {
+                        mCircleContainer.setVisibility(VISIBLE);
+                        mTimerTotalDurationText.setVisibility(GONE);
                     }
 
                     mResetButton.setVisibility(GONE);

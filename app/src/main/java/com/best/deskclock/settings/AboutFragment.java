@@ -2,20 +2,12 @@
 
 package com.best.deskclock.settings;
 
-import static android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE;
-
 import static com.best.deskclock.FirstLaunch.KEY_IS_FIRST_LAUNCH;
 import static com.best.deskclock.data.CustomRingtoneDAO.NEXT_RINGTONE_ID;
 import static com.best.deskclock.data.CustomRingtoneDAO.RINGTONE_IDS;
 import static com.best.deskclock.data.CustomRingtoneDAO.RINGTONE_TITLE;
 import static com.best.deskclock.data.CustomRingtoneDAO.RINGTONE_URI;
-import static com.best.deskclock.settings.PreferencesKeys.KEY_ABOUT_BLACKYHAWKY;
-import static com.best.deskclock.settings.PreferencesKeys.KEY_ABOUT_CRDROID;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_ABOUT_FEATURES;
-import static com.best.deskclock.settings.PreferencesKeys.KEY_ABOUT_LINEAGEOS;
-import static com.best.deskclock.settings.PreferencesKeys.KEY_ABOUT_NILSU11;
-import static com.best.deskclock.settings.PreferencesKeys.KEY_ABOUT_ODMFL;
-import static com.best.deskclock.settings.PreferencesKeys.KEY_ABOUT_QW123WH;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_ABOUT_READ_LICENCE;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_ABOUT_TITLE;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_ABOUT_TRANSLATE;
@@ -25,6 +17,7 @@ import static com.best.deskclock.settings.PreferencesKeys.KEY_ABOUT_WHATS_NEW;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_DEBUG_CATEGORY;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_DISPLAY_DEBUG_SETTINGS;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_ENABLE_LOCAL_LOGGING;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_ESSENTIAL_PERMISSIONS_GRANTED;
 import static com.best.deskclock.utils.Utils.ACTION_LANGUAGE_CODE_CHANGED;
 
 import android.app.Activity;
@@ -33,17 +26,18 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.text.format.DateFormat;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
+import androidx.annotation.Nullable;
+import androidx.core.view.MenuProvider;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.SwitchPreferenceCompat;
@@ -51,13 +45,13 @@ import androidx.preference.SwitchPreferenceCompat;
 import com.best.deskclock.BuildConfig;
 import com.best.deskclock.R;
 import com.best.deskclock.alarms.AlarmStateManager;
-import com.best.deskclock.controller.ThemeController;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.provider.Alarm;
 import com.best.deskclock.uidata.UiDataModel;
 import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.Utils;
+import com.best.deskclock.utils.WidgetUtils;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -109,12 +103,6 @@ public class AboutFragment extends ScreenFragment
     Preference mViewOnGitHub;
     Preference mTranslate;
     Preference mReadLicence;
-    Preference mContributor1;
-    Preference mContributor2;
-    Preference mContributor3;
-    Preference mContributor4;
-    Preference mCredit1;
-    Preference mCredit2;
     PreferenceCategory mDebugCategoryPref;
     SwitchPreferenceCompat mEnableLocalLoggingPref;
 
@@ -141,12 +129,6 @@ public class AboutFragment extends ScreenFragment
         mViewOnGitHub = findPreference(KEY_ABOUT_VIEW_ON_GITHUB);
         mTranslate = findPreference(KEY_ABOUT_TRANSLATE);
         mReadLicence = findPreference(KEY_ABOUT_READ_LICENCE);
-        mContributor1 = findPreference(KEY_ABOUT_BLACKYHAWKY);
-        mContributor2 = findPreference(KEY_ABOUT_QW123WH);
-        mContributor3 = findPreference(KEY_ABOUT_ODMFL);
-        mContributor4 = findPreference(KEY_ABOUT_NILSU11);
-        mCredit1 = findPreference(KEY_ABOUT_LINEAGEOS);
-        mCredit2 = findPreference(KEY_ABOUT_CRDROID);
         mDebugCategoryPref = findPreference(KEY_DEBUG_CATEGORY);
         mEnableLocalLoggingPref = findPreference(KEY_ENABLE_LOCAL_LOGGING);
 
@@ -154,45 +136,53 @@ public class AboutFragment extends ScreenFragment
     }
 
     @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        if (Utils.isDebugConfig() || SettingsDAO.isDebugSettingsDisplayed(mPrefs)) {
-            menu.add(0, 1, 0, R.string.log_backup_icon_title)
-                    .setIcon(R.drawable.ic_bug_report)
-                    .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-        }
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-        menu.add(0, 2, 0, R.string.reset_settings_title)
-                .setIcon(R.drawable.ic_reset_settings)
-                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-    }
+        requireActivity().addMenuProvider(new MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                menu.clear();
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == 1) {
-            String currentDateAndTime = DateFormat.format("yyyy_MM_dd_HH-mm-ss", new Date()).toString();
+                if (Utils.isDebugConfig() || SettingsDAO.isDebugSettingsDisplayed(mPrefs)) {
+                    menu.add(0, MENU_BUG_REPORT, 0, R.string.log_backup_icon_title)
+                            .setIcon(R.drawable.ic_bug_report)
+                            .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+                }
 
-            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT)
-                    .addCategory(Intent.CATEGORY_OPENABLE)
-                    .putExtra(Intent.EXTRA_TITLE, getString(R.string.app_label_debug)
-                            .replace(" ", "_") + "_log_" + currentDateAndTime)
-                    .setType("application/zip");
+                menu.add(0, MENU_RESET_SETTINGS, 0, R.string.reset_settings_title)
+                        .setIcon(R.drawable.ic_reset_settings)
+                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+            }
 
-            exportLogs.launch(intent);
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem item) {
+                if (item.getItemId() == MENU_BUG_REPORT) {
+                    String currentDateAndTime = DateFormat.format("yyyy_MM_dd_HH-mm-ss", new Date()).toString();
 
-            return true;
-        } else if (item.getItemId() == 2) {
-            new MaterialAlertDialogBuilder(requireContext())
-                    .setIcon(R.drawable.ic_reset_settings)
-                    .setTitle(R.string.reset_settings_title)
-                    .setMessage(R.string.reset_settings_message)
-                    .setPositiveButton(android.R.string.ok, (dialog, which) -> resetPreferences())
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show();
+                    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT)
+                            .addCategory(Intent.CATEGORY_OPENABLE)
+                            .putExtra(Intent.EXTRA_TITLE, getString(R.string.app_label_debug)
+                                    .replace(" ", "_") + "_log_" + currentDateAndTime)
+                            .setType("application/zip");
 
-            return true;
-        }
+                    exportLogs.launch(intent);
+                    return true;
+                } else if (item.getItemId() == MENU_RESET_SETTINGS) {
+                    new MaterialAlertDialogBuilder(requireContext())
+                            .setIcon(R.drawable.ic_reset_settings)
+                            .setTitle(R.string.reset_settings_title)
+                            .setMessage(R.string.reset_settings_message)
+                            .setPositiveButton(android.R.string.ok, (dialog, which) -> resetPreferences())
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show();
 
-        return super.onOptionsItemSelected(item);
+                    return true;
+                }
+
+                return false;
+            }
+        }, getViewLifecycleOwner());
     }
 
     @Override
@@ -206,7 +196,7 @@ public class AboutFragment extends ScreenFragment
                     mPrefs.edit().putBoolean(KEY_DISPLAY_DEBUG_SETTINGS, true).apply();
                     mPrefs.edit().putBoolean(KEY_ENABLE_LOCAL_LOGGING, true).apply();
                     Toast.makeText(requireContext(), R.string.toast_message_debug_displayed, Toast.LENGTH_SHORT).show();
-                    recreateActivity();
+                    requireActivity().recreate();
                 }
             }
 
@@ -219,13 +209,10 @@ public class AboutFragment extends ScreenFragment
                 displayLinkDialog(R.drawable.ic_about_update, R.string.whats_new_title, R.string.whats_new_dialog_message, link);
             }
 
-            case KEY_ABOUT_FEATURES ->
-                new MaterialAlertDialogBuilder(requireContext())
-                        .setIcon(R.drawable.ic_about_features)
-                        .setTitle(R.string.features_title)
-                        .setMessage(R.string.about_dialog_message)
-                        .setPositiveButton(R.string.dialog_close, null)
-                        .show();
+            case KEY_ABOUT_FEATURES -> {
+                final String link = "https://github.com/BlackyHawky/Clock?tab=readme-ov-file#features";
+                displayLinkDialog(R.drawable.ic_about_features, R.string.features_title, R.string.features_dialog_message, link);
+            }
 
             case KEY_ABOUT_VIEW_ON_GITHUB -> {
                 final String link = "https://github.com/BlackyHawky/Clock";
@@ -241,25 +228,6 @@ public class AboutFragment extends ScreenFragment
                 final String link = "https://github.com/BlackyHawky/Clock/blob/main/LICENSE-GPL-3";
                 displayLinkDialog(R.drawable.ic_about_license, R.string.license, R.string.license_dialog_message, link);
             }
-
-            case KEY_ABOUT_BLACKYHAWKY ->
-                displayContributorDialog(R.drawable.ic_person, "BlackyHawky", "https://github.com/BlackyHawky");
-
-            case KEY_ABOUT_QW123WH ->
-                displayContributorDialog(R.drawable.ic_person, "qw123wh", "https://github.com/qw123wh");
-
-            case KEY_ABOUT_ODMFL ->
-                displayContributorDialog(R.drawable.ic_person, "odmfl", "https://github.com/odmfl");
-
-            case KEY_ABOUT_NILSU11 ->
-                displayContributorDialog(R.drawable.ic_person, "Nilsu11", "https://github.com/Nilsu11");
-
-            case KEY_ABOUT_LINEAGEOS ->
-                displayContributorDialog(R.drawable.ic_groups, "LineageOS", "https://github.com/LineageOS");
-
-            case KEY_ABOUT_CRDROID ->
-                displayContributorDialog(R.drawable.ic_groups, "crDroid Android", "https://github.com/crdroidandroid");
-
         }
 
         return true;
@@ -278,7 +246,7 @@ public class AboutFragment extends ScreenFragment
                 Toast.makeText(requireContext(), R.string.toast_message_debug_hidden, Toast.LENGTH_SHORT).show();
             }
 
-            recreateActivity();
+            requireActivity().recreate();
 
             Utils.setVibrationTime(requireContext(), 50);
         }
@@ -292,17 +260,6 @@ public class AboutFragment extends ScreenFragment
                 .setIcon(iconId)
                 .setTitle(titleId)
                 .setMessage(requireContext().getString(messageId, link))
-                .setPositiveButton(android.R.string.ok, (dialog, which) -> startActivity(browserIntent))
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
-    }
-
-    private void displayContributorDialog(int iconId, String projectName, String url) {
-        final Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-        new MaterialAlertDialogBuilder(requireContext())
-                .setIcon(iconId)
-                .setTitle(R.string.contributors_dialog_title)
-                .setMessage(requireContext().getString(R.string.contributors_dialog_message, projectName, url))
                 .setPositiveButton(android.R.string.ok, (dialog, which) -> startActivity(browserIntent))
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
@@ -324,12 +281,6 @@ public class AboutFragment extends ScreenFragment
         mViewOnGitHub.setOnPreferenceClickListener(this);
         mTranslate.setOnPreferenceClickListener(this);
         mReadLicence.setOnPreferenceClickListener(this);
-        mContributor1.setOnPreferenceClickListener(this);
-        mContributor2.setOnPreferenceClickListener(this);
-        mContributor3.setOnPreferenceClickListener(this);
-        mContributor4.setOnPreferenceClickListener(this);
-        mCredit1.setOnPreferenceClickListener(this);
-        mCredit2.setOnPreferenceClickListener(this);
 
         mDebugCategoryPref.setVisible(SettingsDAO.isDebugSettingsDisplayed(mPrefs));
         mEnableLocalLoggingPref.setVisible(SettingsDAO.isDebugSettingsDisplayed(mPrefs));
@@ -337,54 +288,45 @@ public class AboutFragment extends ScreenFragment
     }
 
     private void resetPreferences() {
-        Fragment settingsFragment =
-                requireActivity().getSupportFragmentManager().findFragmentByTag(SettingsActivity.SettingsFragment.class.getSimpleName());
+        SharedPreferences.Editor editor = mPrefs.edit();
+        Map<String, ?> settings = mPrefs.getAll();
 
-        if (settingsFragment == null) {
-            animateAndShowFragment(new SettingsActivity.SettingsFragment());
+        for (Map.Entry<String, ?> entry : settings.entrySet()) {
+            // Do not reset the KEY_IS_FIRST_LAUNCH key to prevent the "FirstLaunch" activity from reappearing.
+            // Also, exclude keys corresponding to custom ringtones as this causes bugs for alarms.
+            // Finally, exclude the essential permissions key, as it reflects the current system state
+            // and should not be saved, restored, or reset like other preferences.
+            if (!entry.getKey().equals(KEY_IS_FIRST_LAUNCH)
+                    && !entry.getKey().startsWith(RINGTONE_URI)
+                    && !entry.getKey().equals(RINGTONE_IDS)
+                    && !entry.getKey().equals(NEXT_RINGTONE_ID)
+                    && !entry.getKey().startsWith(RINGTONE_TITLE)
+                    && !entry.getKey().equals(KEY_ESSENTIAL_PERMISSIONS_GRANTED)) {
+                editor.remove(entry.getKey());
+            }
+        }
+        editor.apply();
+
+        tapCountOnVersion = 0;
+
+        LogUtils.clearSavedLocalLogs(requireContext());
+
+        // Required to update Locale.
+        requireContext().sendBroadcast(new Intent(ACTION_LANGUAGE_CODE_CHANGED));
+        // Required to update widgets.
+        WidgetUtils.updateAllWidgets(requireContext());
+        // Required to update the timer list.
+        DataModel.getDataModel().loadTimers();
+        // Required to update the tab to display.
+        UiDataModel.getUiDataModel().setSelectedTab(UiDataModel.Tab.CLOCKS);
+        // Delete all alarms.
+        final List<Alarm> alarms = Alarm.getAlarms(requireContext().getContentResolver(), null);
+        for (Alarm alarm : alarms) {
+            AlarmStateManager.deleteAllInstances(requireContext(), alarm.id);
+            Alarm.deleteAlarm(requireContext().getContentResolver(), alarm.id);
         }
 
-        // Adding a Handler ensures better fluidity for animations
-        new Handler(requireContext().getMainLooper()).postDelayed(() -> {
-            SharedPreferences.Editor editor = mPrefs.edit();
-            Map<String, ?> settings = mPrefs.getAll();
-
-            for (Map.Entry<String, ?> entry : settings.entrySet()) {
-                // Do not reset the KEY_IS_FIRST_LAUNCH key to prevent the "FirstLaunch" activity from reappearing.
-                // Also, exclude keys corresponding to custom ringtones as this causes bugs for alarms.
-                if (!entry.getKey().equals(KEY_IS_FIRST_LAUNCH) &&
-                        !entry.getKey().startsWith(RINGTONE_URI) &&
-                        !entry.getKey().equals(RINGTONE_IDS) &&
-                        !entry.getKey().equals(NEXT_RINGTONE_ID) &&
-                        !entry.getKey().startsWith(RINGTONE_TITLE)) {
-                    editor.remove(entry.getKey());
-                }
-            }
-            editor.apply();
-
-            tapCountOnVersion = 0;
-
-            LogUtils.clearSavedLocalLogs(requireContext());
-
-            // Required to update Locale.
-            requireContext().sendBroadcast(new Intent(ACTION_LANGUAGE_CODE_CHANGED));
-            // Required to update widgets.
-            requireContext().sendBroadcast(new Intent(ACTION_APPWIDGET_UPDATE));
-            // Required to update the timer list.
-            DataModel.getDataModel().loadTimers();
-            // Required to update the tab to display.
-            UiDataModel.getUiDataModel().setSelectedTab(UiDataModel.Tab.CLOCKS);
-            // Delete all alarms.
-            final List<Alarm> alarms = Alarm.getAlarms(requireContext().getContentResolver(), null);
-            for (Alarm alarm : alarms) {
-                AlarmStateManager.deleteAllInstances(requireContext(), alarm.id);
-                Alarm.deleteAlarm(requireContext().getContentResolver(), alarm.id);
-            }
-
-            ThemeController.setNewSettingWithDelay();
-
-            Toast.makeText(requireContext(), requireContext().getString(R.string.toast_message_for_reset), Toast.LENGTH_SHORT).show();
-        }, 500);
+        Toast.makeText(requireContext(), requireContext().getString(R.string.toast_message_for_reset), Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -410,8 +352,9 @@ public class AboutFragment extends ScreenFragment
             logcatWriter.close();
 
             // 2. Save LogUtils logs
+            String logsWithHeader = LogUtils.generateLocalLogFileHeader() + LogUtils.getSavedLocalLogs(context);
             FileWriter localLogWriter = new FileWriter(localLogFile);
-            localLogWriter.write(LogUtils.getSavedLocalLogs(context));
+            localLogWriter.write(logsWithHeader);
             localLogWriter.close();
 
             // 3. Write both files into the zip

@@ -2,11 +2,11 @@
 
 package com.best.deskclock.settings;
 
-import static com.best.deskclock.DeskClock.REQUEST_CHANGE_SETTINGS;
-import static com.best.deskclock.settings.PreferencesKeys.KEY_DEFAULT_TIME_TO_ADD_TO_TIMER;
+import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_ALARM_VOLUME_CRESCENDO_DURATION;
+import static com.best.deskclock.settings.PreferencesDefaultValues.TIMEOUT_END_OF_RINGTONE;
+import static com.best.deskclock.settings.PreferencesDefaultValues.TIMEOUT_NEVER;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_DISPLAY_WARNING_BEFORE_DELETING_TIMER;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_SORT_TIMER;
-import static com.best.deskclock.settings.PreferencesKeys.KEY_TIMER_AUTO_SILENCE;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_TIMER_CREATION_VIEW_STYLE;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_TIMER_FLIP_ACTION;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_TIMER_POWER_BUTTON_ACTION;
@@ -27,19 +27,20 @@ import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
 
+import com.best.deskclock.AutoSilenceDurationDialogFragment;
 import com.best.deskclock.R;
 import com.best.deskclock.VolumeCrescendoDurationDialogFragment;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.ringtone.RingtonePickerActivity;
+import com.best.deskclock.timer.TimerAddTimeButtonDialogFragment;
+import com.best.deskclock.utils.DeviceUtils;
 import com.best.deskclock.utils.Utils;
 
 public class TimerSettingsFragment extends ScreenFragment
         implements Preference.OnPreferenceChangeListener, Preference.OnPreferenceClickListener {
 
-    ListPreference mTimerAutoSilencePref;
     ListPreference mSortTimerPref;
-    ListPreference mDefaultMinutesToAddToTimerPref;
     ListPreference mTimerCreationViewStylePref;
     Preference mTimerRingtonePref;
     Preference mTimerVibratePref;
@@ -63,7 +64,6 @@ public class TimerSettingsFragment extends ScreenFragment
         addPreferencesFromResource(R.xml.settings_timer);
 
         mTimerRingtonePref = findPreference(KEY_TIMER_RINGTONE);
-        mTimerAutoSilencePref = findPreference(KEY_TIMER_AUTO_SILENCE);
         mTimerVibratePref = findPreference(KEY_TIMER_VIBRATE);
         mTimerVolumeButtonsActionPref = findPreference(KEY_TIMER_VOLUME_BUTTONS_ACTION);
         mTimerPowerButtonActionPref = findPreference(KEY_TIMER_POWER_BUTTON_ACTION);
@@ -71,7 +71,6 @@ public class TimerSettingsFragment extends ScreenFragment
         mTimerShakeActionPref = findPreference(KEY_TIMER_SHAKE_ACTION);
         mTimerShakeIntensityPref = findPreference(KEY_TIMER_SHAKE_INTENSITY);
         mSortTimerPref = findPreference(KEY_SORT_TIMER);
-        mDefaultMinutesToAddToTimerPref = findPreference(KEY_DEFAULT_TIME_TO_ADD_TO_TIMER);
         mTransparentBackgroundPref = findPreference(KEY_TRANSPARENT_BACKGROUND_FOR_EXPIRED_TIMER);
         mDisplayWarningBeforeDeletingTimerPref = findPreference(KEY_DISPLAY_WARNING_BEFORE_DELETING_TIMER);
         mTimerCreationViewStylePref = findPreference(KEY_TIMER_CREATION_VIEW_STYLE);
@@ -91,18 +90,10 @@ public class TimerSettingsFragment extends ScreenFragment
         switch (pref.getKey()) {
             case KEY_TIMER_RINGTONE -> mTimerRingtonePref.setSummary(DataModel.getDataModel().getTimerRingtoneTitle());
 
-            case KEY_TIMER_AUTO_SILENCE, KEY_DEFAULT_TIME_TO_ADD_TO_TIMER,
-                 KEY_TIMER_CREATION_VIEW_STYLE -> {
+            case KEY_TIMER_CREATION_VIEW_STYLE, KEY_SORT_TIMER -> {
                 final ListPreference preference = (ListPreference) pref;
                 final int index = preference.findIndexOfValue((String) newValue);
                 preference.setSummary(preference.getEntries()[index]);
-            }
-
-            case KEY_SORT_TIMER -> {
-                final int index = mSortTimerPref.findIndexOfValue((String) newValue);
-                mSortTimerPref.setSummary(mSortTimerPref.getEntries()[index]);
-                // Set result so DeskClock knows to refresh itself
-                requireActivity().setResult(REQUEST_CHANGE_SETTINGS);
             }
 
             case KEY_TIMER_SHAKE_ACTION -> {
@@ -136,12 +127,26 @@ public class TimerSettingsFragment extends ScreenFragment
 
     @Override
     public void onDisplayPreferenceDialog(@NonNull Preference pref) {
-        if (pref instanceof VolumeCrescendoDurationPreference volumeCrescendoDurationPreference) {
+        if (pref instanceof AutoSilenceDurationPreference autoSilenceDurationPreference) {
+            int currentValue = autoSilenceDurationPreference.getAutoSilenceDuration();
+            AutoSilenceDurationDialogFragment dialogFragment =
+                    AutoSilenceDurationDialogFragment.newInstance(pref.getKey(), currentValue,
+                            currentValue == TIMEOUT_END_OF_RINGTONE,
+                            currentValue == TIMEOUT_NEVER, true);
+            AutoSilenceDurationDialogFragment.show(getParentFragmentManager(), dialogFragment);
+        } else if (pref instanceof VolumeCrescendoDurationPreference volumeCrescendoDurationPreference) {
             int currentDelay = volumeCrescendoDurationPreference.getVolumeCrescendoDuration();
             VolumeCrescendoDurationDialogFragment dialogFragment =
-                    VolumeCrescendoDurationDialogFragment.newInstance(pref.getKey(), currentDelay);
+                    VolumeCrescendoDurationDialogFragment.newInstance(pref.getKey(), currentDelay,
+                            currentDelay == DEFAULT_ALARM_VOLUME_CRESCENDO_DURATION);
             VolumeCrescendoDurationDialogFragment.show(getParentFragmentManager(), dialogFragment);
-        } else {
+        } else if (pref instanceof TimerAddTimeButtonValuePreference timerAddTimeButtonValuePreference) {
+            int currentValue = timerAddTimeButtonValuePreference.getAddTimeButtonValue();
+            TimerAddTimeButtonDialogFragment dialogFragment =
+                    TimerAddTimeButtonDialogFragment.newInstance(pref.getKey(), currentValue);
+            TimerAddTimeButtonDialogFragment.show(getParentFragmentManager(), dialogFragment);
+        }
+        else {
             super.onDisplayPreferenceDialog(pref);
         }
     }
@@ -149,8 +154,20 @@ public class TimerSettingsFragment extends ScreenFragment
     private void setupPreferences() {
         mTimerRingtonePref.setOnPreferenceClickListener(this);
 
-        mTimerAutoSilencePref.setOnPreferenceChangeListener(this);
-        mTimerAutoSilencePref.setSummary(mTimerAutoSilencePref.getEntry());
+        // Timer auto silence duration preference
+        getParentFragmentManager().setFragmentResultListener(AutoSilenceDurationDialogFragment.REQUEST_KEY,
+                this, (requestKey, bundle) -> {
+                    String key = bundle.getString(AutoSilenceDurationDialogFragment.RESULT_PREF_KEY);
+                    int newValue = bundle.getInt(AutoSilenceDurationDialogFragment.AUTO_SILENCE_DURATION_VALUE);
+
+                    if (key != null) {
+                        AutoSilenceDurationPreference pref = findPreference(key);
+                        if (pref != null) {
+                            pref.setAutoSilenceDuration(newValue);
+                            pref.setSummary(pref.getSummary());
+                        }
+                    }
+                });
 
         // Timer volume crescendo duration preference
         getParentFragmentManager().setFragmentResultListener(VolumeCrescendoDurationDialogFragment.REQUEST_KEY,
@@ -167,7 +184,7 @@ public class TimerSettingsFragment extends ScreenFragment
                     }
                 });
 
-        mTimerVibratePref.setVisible(Utils.hasVibrator(requireContext()));
+        mTimerVibratePref.setVisible(DeviceUtils.hasVibrator(requireContext()));
         mTimerVibratePref.setOnPreferenceChangeListener(this);
 
         mTimerVolumeButtonsActionPref.setOnPreferenceChangeListener(this);
@@ -192,8 +209,21 @@ public class TimerSettingsFragment extends ScreenFragment
         mSortTimerPref.setOnPreferenceChangeListener(this);
         mSortTimerPref.setSummary(mSortTimerPref.getEntry());
 
-        mDefaultMinutesToAddToTimerPref.setOnPreferenceChangeListener(this);
-        mDefaultMinutesToAddToTimerPref.setSummary(mDefaultMinutesToAddToTimerPref.getEntry());
+        // Add time button value preference
+        getParentFragmentManager().setFragmentResultListener(TimerAddTimeButtonDialogFragment.REQUEST_KEY,
+                this, (requestKey, bundle) -> {
+            String key = bundle.getString(TimerAddTimeButtonDialogFragment.RESULT_PREF_KEY);
+            int newValue = bundle.getInt(TimerAddTimeButtonDialogFragment.ADD_TIME_BUTTON_VALUE);
+
+            if (key != null) {
+                TimerAddTimeButtonValuePreference pref = findPreference(key);
+                if (pref != null) {
+                    pref.setAddTimeButtonValue(newValue);
+                    pref.setSummary(pref.getSummary());
+                }
+            }
+
+        });
 
         mTransparentBackgroundPref.setOnPreferenceChangeListener(this);
 

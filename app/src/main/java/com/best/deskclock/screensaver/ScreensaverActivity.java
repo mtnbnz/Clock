@@ -24,8 +24,7 @@ import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 
-import androidx.appcompat.app.AppCompatActivity;
-
+import com.best.deskclock.BaseActivity;
 import com.best.deskclock.R;
 import com.best.deskclock.events.Events;
 import com.best.deskclock.uidata.UiDataModel;
@@ -37,7 +36,7 @@ import com.best.deskclock.utils.SdkUtils;
 
 import java.util.Objects;
 
-public class ScreensaverActivity extends AppCompatActivity {
+public class ScreensaverActivity extends BaseActivity {
 
     private static final LogUtils.Logger LOGGER = new LogUtils.Logger("ScreensaverActivity");
 
@@ -82,8 +81,6 @@ public class ScreensaverActivity extends AppCompatActivity {
         setContentView(R.layout.desk_clock_saver);
         mContentView = findViewById(R.id.saver_container);
 
-        ScreensaverUtils.hideScreensaverSystemBars(getWindow(), mContentView);
-
         mMainClockView = findViewById(R.id.main_clock);
 
         ScreensaverUtils.setScreensaverMarginsAndClockStyle(this, mMainClockView);
@@ -118,6 +115,8 @@ public class ScreensaverActivity extends AppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
+
+        ScreensaverUtils.hideScreensaverSystemBars(getWindow(), mContentView);
 
         ClockUtils.updateDate(mDateFormat, mDateFormatForAccessibility, mContentView);
         AlarmUtils.refreshAlarm(ScreensaverActivity.this, mContentView);
@@ -161,10 +160,10 @@ public class ScreensaverActivity extends AppCompatActivity {
         if (SdkUtils.isAtLeastAndroid11()) {
             WindowInsetsController insetsController = win.getInsetsController();
             if (insetsController != null) {
-                insetsController.hide(WindowInsets.Type.statusBars());
                 insetsController.setSystemBarsBehavior(
                         WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 );
+                insetsController.hide(WindowInsets.Type.systemBars());
             }
         } else {
             winParams.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;

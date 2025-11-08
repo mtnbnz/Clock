@@ -91,8 +91,7 @@
     <string name="snooze_duration_title" msgid="1097309861110780483">"Kohëzgjatja e dremitjes"</string>
     <string name="crescendo_duration_title" msgid="8606408542726189528">"Rrit gradualisht volumin"</string>
     <string name="auto_silence_title" msgid="2012754009554434544">"Kalo në heshtje për"</string>
-    <string name="auto_silence_never" msgid="4821982647348750809">"Asnjeherë"</string>
-    <string name="auto_silence_1_minute">1 minutë</string>
+    <string name="label_never" msgid="4821982647348750809">"Asnjeherë"</string>
     <string name="label_off">Çaktivizuar</string>
     <string name="week_start_title" msgid="4268917518596832096">"Nise javën në ditën"</string>
     <string name="week_start_saturday">E shtunë</string>
@@ -264,6 +263,8 @@
         <item msgid="3027153773466391728">"Fixhi"</item>
         <item msgid="5911600083231840181">"Tongë"</item>
         <item msgid="5176858645450908751">"Xhakartë"</item>
+        <item>"Rijad"</item>
+        <item>"Rejkjavik"</item>
     </string-array>
     <string name="shortcut_new_alarm_short" msgid="3490418929139725538">"Alarm i ri"</string>
     <string name="shortcut_new_alarm_long" msgid="4778064830147981089">"Krijo alarm të ri"</string>

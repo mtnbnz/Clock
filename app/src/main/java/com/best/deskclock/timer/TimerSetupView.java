@@ -126,8 +126,8 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
 
             if (isCardBorderDisplayed) {
                 digitButton.setStrokeWidth(ThemeUtils.convertDpToPixels(2, getContext()));
-                digitButton.setStrokeColor(ColorStateList.valueOf(
-                        MaterialColors.getColor(getContext(), com.google.android.material.R.attr.colorPrimary, Color.BLACK)));
+                digitButton.setStrokeColor(ColorStateList.valueOf(MaterialColors.getColor(getContext(),
+                        androidx.appcompat.R.attr.colorPrimary, Color.BLACK)));
             }
 
             if (isTablet) {
@@ -177,11 +177,6 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
             final ConstraintLayout.LayoutParams deleteButtonParams = (ConstraintLayout.LayoutParams) mDeleteButton.getLayoutParams();
             deleteButtonParams.setMargins(marginButtonLeft, marginButtonTop, marginButtonRight, marginButtonBottom);
             mDeleteButton.setLayoutParams(deleteButtonParams);
-            // In landscape mode, we don't want buttons to take up the full height of the screen.
-            if (ThemeUtils.isLandscape()) {
-                final View tabletDigits = findViewById(R.id.timer_setup_digits);
-                tabletDigits.getLayoutParams().height = ThemeUtils.convertDpToPixels(450, getContext());
-            }
         }
 
         updateTime();
@@ -277,7 +272,7 @@ public class TimerSetupView extends LinearLayout implements View.OnClickListener
         startIdx = minutes > 0 ? 4 : startIdx;
         startIdx = hours > 0 ? 0 : startIdx;
         if (startIdx != endIdx) {
-            int highlightColor = MaterialColors.getColor(getContext(), com.google.android.material.R.attr.colorPrimary, Color.BLACK);
+            int highlightColor = MaterialColors.getColor(getContext(), androidx.appcompat.R.attr.colorPrimary, Color.BLACK);
             text.setSpan(new ForegroundColorSpan(highlightColor), startIdx, endIdx, 0);
         }
         mTimeView.setText(text);

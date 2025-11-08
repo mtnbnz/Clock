@@ -32,7 +32,7 @@ public class SdkUtils {
      * {@code false} otherwise.
      */
     public static boolean isAtLeastAndroid71() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1;
+        return isAtLeastVersion(Build.VERSION_CODES.N_MR1);
     }
 
     /**
@@ -56,7 +56,7 @@ public class SdkUtils {
      * {@code false} otherwise.
      */
     public static boolean isAtLeastAndroid81() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1;
+        return isAtLeastVersion(Build.VERSION_CODES.O_MR1);
     }
 
     /**
@@ -65,14 +65,6 @@ public class SdkUtils {
      */
     public static boolean isAtLeastAndroid9() {
         return isAtLeastVersion(Build.VERSION_CODES.P);
-    }
-
-    /**
-     * @return {@code true} if the API version is before 29 (Quince Tart).
-     * {@code false} otherwise.
-     */
-    public static boolean isBeforeAndroid10() {
-        return !isAtLeastAndroid10();
     }
 
     /**
@@ -89,14 +81,6 @@ public class SdkUtils {
      */
     public static boolean isAtLeastAndroid11() {
         return isAtLeastVersion(Build.VERSION_CODES.R);
-    }
-
-    /**
-     * @return {@code true} if the API version is before 31 (Snow Cone).
-     * {@code false} otherwise.
-     */
-    public static boolean isBeforeAndroid12() {
-        return !isAtLeastAndroid12();
     }
 
     /**

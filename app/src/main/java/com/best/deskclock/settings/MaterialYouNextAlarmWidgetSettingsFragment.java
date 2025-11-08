@@ -2,17 +2,19 @@
 
 package com.best.deskclock.settings;
 
-import static android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE;
 import static android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID;
 import static android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID;
 
 import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_APPLY_HORIZONTAL_PADDING;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_CUSTOM_ALARM_COLOR;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_CUSTOM_ALARM_TITLE_COLOR;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_CUSTOM_BACKGROUND_COLOR;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_CUSTOM_TITLE_COLOR;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DEFAULT_ALARM_COLOR;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DEFAULT_ALARM_TITLE_COLOR;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DEFAULT_BACKGROUND_COLOR;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DEFAULT_TITLE_COLOR;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DISPLAY_BACKGROUND;
 
 import android.app.Activity;
 import android.appwidget.AppWidgetManager;
@@ -23,11 +25,12 @@ import androidx.annotation.NonNull;
 import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
 
-import com.best.alarmclock.WidgetUtils;
-import com.best.alarmclock.materialyouwidgets.MaterialYouNextAlarmAppWidgetProvider;
 import com.best.deskclock.R;
 import com.best.deskclock.data.WidgetDAO;
 import com.best.deskclock.utils.Utils;
+import com.best.deskclock.utils.WidgetUtils;
+import com.best.deskclock.widgets.materialyouwidgets.MaterialYouNextAlarmAppWidgetProvider;
+
 import com.rarepebble.colorpicker.ColorPreference;
 
 public class MaterialYouNextAlarmWidgetSettingsFragment extends ScreenFragment
@@ -35,13 +38,16 @@ public class MaterialYouNextAlarmWidgetSettingsFragment extends ScreenFragment
 
     private int mAppWidgetId = INVALID_APPWIDGET_ID;
 
-    ColorPreference mCustomTitleColorPref;
-    ColorPreference mCustomAlarmTitleColorPref;
-    ColorPreference mCustomAlarmColorPref;
-    SwitchPreferenceCompat mDefaultTitleColorPref;
-    SwitchPreferenceCompat mDefaultAlarmTitleColorPref;
-    SwitchPreferenceCompat mDefaultAlarmColorPref;
+    SwitchPreferenceCompat mShowBackgroundOnDigitalWidgetPref;
     SwitchPreferenceCompat mApplyHorizontalPaddingPref;
+    SwitchPreferenceCompat mDefaultBackgroundColorPref;
+    ColorPreference mCustomBackgroundColorPref;
+    SwitchPreferenceCompat mDefaultTitleColorPref;
+    ColorPreference mCustomTitleColorPref;
+    SwitchPreferenceCompat mDefaultAlarmTitleColorPref;
+    ColorPreference mCustomAlarmTitleColorPref;
+    SwitchPreferenceCompat mDefaultAlarmColorPref;
+    ColorPreference mCustomAlarmColorPref;
 
     @Override
     protected String getFragmentTitle() {
@@ -54,15 +60,20 @@ public class MaterialYouNextAlarmWidgetSettingsFragment extends ScreenFragment
 
         addPreferencesFromResource(R.xml.settings_customize_material_you_next_alarm_widget);
 
+        mShowBackgroundOnDigitalWidgetPref = findPreference(KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DISPLAY_BACKGROUND);
+        mApplyHorizontalPaddingPref = findPreference(KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_APPLY_HORIZONTAL_PADDING);
+        mDefaultBackgroundColorPref = findPreference(KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DEFAULT_BACKGROUND_COLOR);
+        mCustomBackgroundColorPref = findPreference(KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_CUSTOM_BACKGROUND_COLOR);
         mDefaultTitleColorPref = findPreference(KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DEFAULT_TITLE_COLOR);
         mCustomTitleColorPref = findPreference(KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_CUSTOM_TITLE_COLOR);
         mDefaultAlarmTitleColorPref = findPreference(KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DEFAULT_ALARM_TITLE_COLOR);
         mCustomAlarmTitleColorPref = findPreference(KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_CUSTOM_ALARM_TITLE_COLOR);
         mDefaultAlarmColorPref = findPreference(KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DEFAULT_ALARM_COLOR);
         mCustomAlarmColorPref = findPreference(KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_CUSTOM_ALARM_COLOR);
-        mApplyHorizontalPaddingPref = findPreference(KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_APPLY_HORIZONTAL_PADDING);
 
         setupPreferences();
+
+        WidgetUtils.addFinishOnBackPressedIfLaunchedFromWidget(this);
 
         requireActivity().setResult(Activity.RESULT_CANCELED);
 
@@ -85,15 +96,23 @@ public class MaterialYouNextAlarmWidgetSettingsFragment extends ScreenFragment
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
-
-        WidgetUtils.resetLaunchFlag();
-    }
-
-    @Override
     public boolean onPreferenceChange(Preference pref, Object newValue) {
         switch (pref.getKey()) {
+            case KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DISPLAY_BACKGROUND -> {
+                mDefaultBackgroundColorPref.setVisible((boolean) newValue);
+                mCustomBackgroundColorPref.setVisible((boolean) newValue &&
+                        !WidgetDAO.isMaterialYouNextAlarmWidgetDefaultBackgroundColor(mPrefs));
+                Utils.setVibrationTime(requireContext(), 50);
+            }
+
+            case KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_APPLY_HORIZONTAL_PADDING ->
+                    Utils.setVibrationTime(requireContext(), 50);
+
+            case KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DEFAULT_BACKGROUND_COLOR -> {
+                mCustomBackgroundColorPref.setVisible(!(boolean) newValue);
+                Utils.setVibrationTime(requireContext(), 50);
+            }
+
             case KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_DEFAULT_TITLE_COLOR -> {
                 mCustomTitleColorPref.setVisible(!(boolean) newValue);
                 Utils.setVibrationTime(requireContext(), 50);
@@ -108,12 +127,9 @@ public class MaterialYouNextAlarmWidgetSettingsFragment extends ScreenFragment
                 mCustomAlarmColorPref.setVisible(!(boolean) newValue);
                 Utils.setVibrationTime(requireContext(), 50);
             }
-
-            case KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_APPLY_HORIZONTAL_PADDING ->
-                    Utils.setVibrationTime(requireContext(), 50);
         }
 
-        requireContext().sendBroadcast(new Intent(ACTION_APPWIDGET_UPDATE));
+        WidgetUtils.scheduleWidgetUpdate(requireContext(), MaterialYouNextAlarmAppWidgetProvider.class);
         return true;
     }
 
@@ -125,6 +141,17 @@ public class MaterialYouNextAlarmWidgetSettingsFragment extends ScreenFragment
     }
 
     private void setupPreferences() {
+        mShowBackgroundOnDigitalWidgetPref.setOnPreferenceChangeListener(this);
+
+        mApplyHorizontalPaddingPref.setOnPreferenceChangeListener(this);
+
+        mDefaultBackgroundColorPref.setVisible(WidgetDAO.isBackgroundDisplayedOnMaterialYouNextAlarmWidget(mPrefs));
+        mDefaultBackgroundColorPref.setOnPreferenceChangeListener(this);
+
+        mCustomBackgroundColorPref.setVisible(WidgetDAO.isBackgroundDisplayedOnMaterialYouNextAlarmWidget(mPrefs)
+                && !WidgetDAO.isMaterialYouNextAlarmWidgetDefaultBackgroundColor(mPrefs));
+        mCustomBackgroundColorPref.setOnPreferenceChangeListener(this);
+
         mDefaultTitleColorPref.setOnPreferenceChangeListener(this);
 
         mCustomTitleColorPref.setVisible(!WidgetDAO.isMaterialYouNextAlarmWidgetDefaultTitleColor(mPrefs));
@@ -139,15 +166,15 @@ public class MaterialYouNextAlarmWidgetSettingsFragment extends ScreenFragment
 
         mCustomAlarmColorPref.setVisible(!WidgetDAO.isMaterialYouNextAlarmWidgetDefaultAlarmColor(mPrefs));
         mCustomAlarmColorPref.setOnPreferenceChangeListener(this);
-
-        mApplyHorizontalPaddingPref.setOnPreferenceChangeListener(this);
     }
 
     private void saveCheckedPreferenceStates() {
+        mShowBackgroundOnDigitalWidgetPref.setChecked(WidgetDAO.isBackgroundDisplayedOnMaterialYouNextAlarmWidget(mPrefs));
+        mApplyHorizontalPaddingPref.setChecked(WidgetDAO.isMaterialYouNextAlarmWidgetHorizontalPaddingApplied(mPrefs));
+        mDefaultBackgroundColorPref.setChecked(WidgetDAO.isMaterialYouNextAlarmWidgetDefaultBackgroundColor(mPrefs));
         mDefaultTitleColorPref.setChecked(WidgetDAO.isMaterialYouNextAlarmWidgetDefaultTitleColor(mPrefs));
         mDefaultAlarmTitleColorPref.setChecked(WidgetDAO.isMaterialYouNextAlarmWidgetDefaultAlarmTitleColor(mPrefs));
         mDefaultAlarmColorPref.setChecked(WidgetDAO.isMaterialYouNextAlarmWidgetDefaultAlarmColor(mPrefs));
-        mApplyHorizontalPaddingPref.setChecked(WidgetDAO.isMaterialYouNextAlarmWidgetHorizontalPaddingApplied(mPrefs));
     }
 
     private void updateMaterialYouNextAlarmWidget() {

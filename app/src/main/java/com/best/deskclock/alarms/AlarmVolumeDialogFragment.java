@@ -12,7 +12,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -49,6 +48,7 @@ public class AlarmVolumeDialogFragment  extends DialogFragment {
     private static final String ARG_TAG = "arg_tag";
 
     private Context mContext;
+    private AudioManager mAudioManager;
     private Alarm mAlarm;
     private String mTag;
     private SeekBar mSeekBar;
@@ -128,22 +128,24 @@ public class AlarmVolumeDialogFragment  extends DialogFragment {
             volumeValue = savedInstanceState.getInt(ARG_ALARM_VOLUME_VALUE, volumeValue);
         }
 
-        View view = LayoutInflater.from(mContext).inflate(R.layout.alarm_volume_dialog, null);
+        mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+
+        int maxVolume = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+        mMinVolume = RingtoneUtils.getAlarmMinVolume(mAudioManager);
+        int clampedVolume = Math.min(volumeValue, maxVolume);
+        int currentVolume = clampedVolume - mMinVolume;
+
+        View view = getLayoutInflater().inflate(R.layout.alarm_volume_dialog, null);
 
         mSeekBar = view.findViewById(R.id.alarm_volume_seekbar);
         mVolumeValue = view.findViewById(R.id.alarm_volume_value);
         mVolumeMinus = view.findViewById(R.id.volume_minus_icon);
         mVolumePlus = view.findViewById(R.id.volume_plus_icon);
 
-        AudioManager audioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
-        int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
-        mMinVolume = RingtoneUtils.getAlarmMinVolume(audioManager);
-        int currentVolume = volumeValue - mMinVolume;
-
         mSeekBar.setMax(maxVolume - mMinVolume);
         mSeekBar.setProgress(currentVolume);
 
-        updateVolumeText(volumeValue, maxVolume);
+        updateVolumeText(clampedVolume, maxVolume);
         updateVolumeButtonStates(currentVolume, maxVolume - mMinVolume);
 
         mVolumeMinus.setOnClickListener(v -> {
@@ -175,17 +177,18 @@ public class AlarmVolumeDialogFragment  extends DialogFragment {
                     int newVolume = progress + mMinVolume;
                     updateVolumeText(newVolume, maxVolume);
                     updateVolumeButtonStates(progress, maxVolume - mMinVolume);
+                    mAudioManager.setStreamVolume(AudioManager.STREAM_ALARM, newVolume, 0);
                 }
             }
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
+                int newVolume = seekBar.getProgress() + mMinVolume;
+                startRingtonePreview(mAlarm, newVolume);
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                int newVolume = seekBar.getProgress() + mMinVolume;
-                startRingtonePreview(mAlarm, newVolume);
             }
         });
 
@@ -264,19 +267,17 @@ public class AlarmVolumeDialogFragment  extends DialogFragment {
      * @param newVolume  The volume level (in steps) to apply during the preview.
      */
     public void startRingtonePreview(Alarm alarm, int newVolume) {
-        final AudioManager audioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
-
         if (mRingtoneStopRunnable != null) {
             mRingtoneHandler.removeCallbacks(mRingtoneStopRunnable);
         }
 
         // Save the current system volume
         if (mPreviousVolume == -1) {
-            mPreviousVolume = audioManager.getStreamVolume(AudioManager.STREAM_ALARM);
+            mPreviousVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_ALARM);
         }
 
         // Temporarily apply the new volume
-        audioManager.setStreamVolume(AudioManager.STREAM_ALARM, newVolume, 0);
+        mAudioManager.setStreamVolume(AudioManager.STREAM_ALARM, newVolume, 0);
 
         Uri ringtoneUri = alarm.alert;
         if (RingtoneUtils.isRandomRingtone(ringtoneUri)) {
@@ -304,8 +305,6 @@ public class AlarmVolumeDialogFragment  extends DialogFragment {
             return;
         }
 
-        final AudioManager audioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
-
         if (mRingtoneStopRunnable != null) {
             mRingtoneHandler.removeCallbacks(mRingtoneStopRunnable);
         }
@@ -316,7 +315,7 @@ public class AlarmVolumeDialogFragment  extends DialogFragment {
 
         // Restore the system volume
         if (mPreviousVolume != -1) {
-            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, mPreviousVolume, 0);
+            mAudioManager.setStreamVolume(AudioManager.STREAM_ALARM, mPreviousVolume, 0);
             mPreviousVolume = -1;
         }
 

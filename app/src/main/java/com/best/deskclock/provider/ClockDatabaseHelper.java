@@ -27,7 +27,7 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
     static final String ALARMS_TABLE_NAME = "alarm_templates";
     static final String INSTANCES_TABLE_NAME = "alarm_instances";
 
-    private static final int DATABASE_VERSION = 21;
+    private static final int DATABASE_VERSION = 22;
     private static final int MINIMUM_SUPPORTED_VERSION = 15;
 
     public ClockDatabaseHelper(Context context) {
@@ -51,8 +51,9 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
                 ClockContract.AlarmsColumns.DELETE_AFTER_USE + " INTEGER NOT NULL DEFAULT 0, " +
                 ClockContract.AlarmsColumns.AUTO_SILENCE_DURATION + " INTEGER NOT NULL DEFAULT 10, " +
                 ClockContract.AlarmsColumns.SNOOZE_DURATION + " INTEGER NOT NULL DEFAULT 10, " +
+                ClockContract.AlarmsColumns.MISSED_ALARM_REPEAT_LIMIT + " INTEGER NOT NULL DEFAULT -1, " +
                 ClockContract.AlarmsColumns.CRESCENDO_DURATION + " INTEGER NOT NULL DEFAULT 0, " +
-                ClockContract.AlarmsColumns.ALARM_VOLUME + " INTEGER NOT NULL DEFAULT 11);");
+                ClockContract.AlarmsColumns.ALARM_VOLUME + " INTEGER NOT NULL DEFAULT 5);");
 
         LogUtils.i("Alarms Table created");
     }
@@ -72,6 +73,8 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
                 ClockContract.InstancesColumns.ALARM_STATE + " INTEGER NOT NULL, " +
                 ClockContract.InstancesColumns.AUTO_SILENCE_DURATION + " INTEGER NOT NULL, " +
                 ClockContract.InstancesColumns.SNOOZE_DURATION + " INTEGER NOT NULL, " +
+                ClockContract.InstancesColumns.MISSED_ALARM_REPEAT_COUNT + " INTEGER NOT NULL, " +
+                ClockContract.InstancesColumns.MISSED_ALARM_REPEAT_LIMIT + " INTEGER NOT NULL, " +
                 ClockContract.InstancesColumns.CRESCENDO_DURATION + " INTEGER NOT NULL, " +
                 ClockContract.InstancesColumns.ALARM_VOLUME + " INTEGER NOT NULL, " +
                 ClockContract.InstancesColumns.ALARM_ID + " INTEGER REFERENCES " +
@@ -193,6 +196,22 @@ class ClockDatabaseHelper extends SQLiteOpenHelper {
 
             LogUtils.i("dismissAlarmWhenRingtoneEnds, alarmSnoozeActions and increasingVolume" +
                     " columns removed for version 21 upgrade.");
+        }
+
+        if (oldVersion < 22) {
+            db.execSQL("ALTER TABLE " + ALARMS_TABLE_NAME
+                    + " ADD COLUMN " + ClockContract.AlarmsColumns.MISSED_ALARM_REPEAT_LIMIT
+                    + " INTEGER NOT NULL DEFAULT -1;");
+
+            db.execSQL("ALTER TABLE " + INSTANCES_TABLE_NAME
+                    + " ADD COLUMN " + ClockContract.InstancesColumns.MISSED_ALARM_REPEAT_COUNT
+                    + " INTEGER NOT NULL DEFAULT 0;");
+
+            db.execSQL("ALTER TABLE " + INSTANCES_TABLE_NAME
+                    + " ADD COLUMN " + ClockContract.InstancesColumns.MISSED_ALARM_REPEAT_LIMIT
+                    + " INTEGER NOT NULL DEFAULT -1;");
+
+            LogUtils.i("Added missed_alarm_repeat_count + missed_alarm_repeat_limit columns for version 23 upgrade.");
         }
     }
 

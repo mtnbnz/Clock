@@ -91,8 +91,7 @@
     <string name="snooze_duration_title" msgid="1097309861110780483">"Dauer der Schlummerfunktion"</string>
     <string name="crescendo_duration_title" msgid="8606408542726189528">"Lautstärke schrittweise erhöhen"</string>
     <string name="auto_silence_title" msgid="2012754009554434544">"Stummschalten nach"</string>
-    <string name="auto_silence_never" msgid="4821982647348750809">"Nie"</string>
-    <string name="auto_silence_1_minute">1 Minute</string>
+    <string name="label_never" msgid="4821982647348750809">"Nie"</string>
     <string name="label_off">Aus</string>
     <string name="week_start_title" msgid="4268917518596832096">"Wochenbeginn am"</string>
     <string name="week_start_saturday">Samstag</string>
@@ -264,6 +263,8 @@
         <item msgid="3027153773466391728">"Fidschi"</item>
         <item msgid="5911600083231840181">"Tonga"</item>
         <item msgid="5176858645450908751">"Jakarta"</item>
+        <item>"Riad"</item>
+        <item>"Reykjavik"</item>
     </string-array>
     <string name="shortcut_new_alarm_short" msgid="3490418929139725538">Neuer Alarm</string>
     <string name="shortcut_new_alarm_long" msgid="4778064830147981089">Neuen Alarm erstellen</string>
@@ -344,7 +345,6 @@
     <string name="analog_widget_material_you">\'Material You\' Analoguhr</string>
     <string name="material_you_digital_widget">\'Material You\' Digitaluhr</string>
     <string name="style_category_title">Stil</string>
-    <string name="styles_and_colors_category_title">Stil und Farben</string>
     <string name="font_category_title">Schrift</string>
     <string name="ringtone_category_title">Signalton</string>
     <string name="interface_customization_settings">Aussehen</string>
@@ -380,22 +380,17 @@
     <string name="first_launch_main_feature_link">… und vieles mehr!</string>
     <string name="first_launch_important_info_message_for_SDK34">• &lt;b&gt;VOLLBILD-&amp;#x200b;BENACHRICHTIGUNGEN;&lt;/b&gt; &lt;br&gt; &lt;br&gt;</string>
     <string name="first_launch_dialog_title">Beenden</string>
-    <string name="digital_widget_clock_custom_color_title">Benutzerdefinierte Farbe der Hauptuhr</string>
-    <string name="digital_widget_date_default_color_title">Standardfarbe für Datum verwenden</string>
-    <string name="digital_widget_date_custom_color_title">Benutzerdefinierte Farbe des Datums</string>
-    <string name="widget_next_alarm_default_color_title">Standardfarbe für nächsten Alarm verwenden</string>
-    <string name="widget_next_alarm_custom_color_title">Benutzerdefinierte Farbe des nächsten Alarms</string>
-    <string name="digital_widget_city_clock_custom_color_title">Benutzerdefinierte Farbe der Uhr einer Stadt</string>
+    <string name="date_default_color_title">Standardfarbe für Datum verwenden</string>
+    <string name="next_alarm_default_color_title">Standardfarbe für nächsten Alarm verwenden</string>
+    <string name="city_clock_color_title">Benutzerdefinierte Farbe der Uhr einer Stadt</string>
     <string name="permission_management_settings">Berechtigungen verwalten</string>
     <string name="permission_management_summary">Anzeige der für die ordnungsgemäße Funktion der Anwendung erforderlichen Berechtigungen</string>
     <string name="permission_highly_recommended">Sehr empfohlen</string>
     <string name="permission_status_title">Status: </string>
-    <string name="permission_dialog_close_button">Schließen</string>
     <string name="ignore_battery_optimizations_title">AKKU-OPTIMIERUNGEN IGNORIEREN</string>
     <string name="ignore_battery_optimizations_dialog_title">Akku-Optimierungen</string>
     <string name="notifications_permission_title">BENACHRICHTIGUNGEN AKTIVIEREN</string>
     <string name="notifications_dialog_title">Benachrichtigungen</string>
-    <string name="contributors">Mitwirkende</string>
     <string name="permission_dialog_revoke_title">Berechtigung aufheben</string>
     <string name="ignore_battery_optimizations_dialog_text">Standardmäßig konfiguriert das Android-System alle vom Benutzer installierten Apps so, dass sie optimiert werden, um den Akku zu schonen.
 \n
@@ -403,19 +398,18 @@
 \n
 \nWir empfehlen, diese App von den Akku-Optimierungen auszuschließen.</string>
     <string name="settings_permission_summary">Hier tippen, um die Seite zur Berechtigungsverwaltung anzuzeigen.</string>
-    <string name="credits">Dank an</string>
     <string name="settings_permission_message">Eine oder mehrere notwendige Berechtigungen fehlen. Sie nicht zu gewähren, kann zu Fehlfunktionen führen.</string>
     <string name="miscellaneous_category_title">Verschiedenes</string>
     <string name="actions_category_title">Aktionen</string>
-    <string name="screensaver_date_color_title">Farbe des Datums</string>
+    <string name="date_color_title">Farbe des Datums</string>
     <string name="screensaver_italic_next_alarm_title">Nächster Alarm <i>kursiv</i></string>
     <string name="FSN_permission_title">VOLLBILD-​BENACHRICHTIGUNGEN AKTIVIEREN</string>
     <string name="screensaver_settings_summary">Einstellen von Stil, Farben und Schriftarten des Bildschirmschoners</string>
-    <string name="digital_widget_city_clock_default_color_title">Standardfarbe für Uhr einer Stadt verwenden</string>
-    <string name="digital_widget_city_name_default_color_title">Standardfarbe für Stadtnamen verwenden</string>
-    <string name="digital_widget_city_name_custom_color_title">Benutzerdefinierte Farbe des Stadtnamens</string>
+    <string name="city_clock_default_color_title">Standardfarbe für Uhr einer Stadt verwenden</string>
+    <string name="city_name_default_color_title">Standardfarbe für Stadtnamen verwenden</string>
+    <string name="city_name_color_title">Benutzerdefinierte Farbe des Stadtnamens</string>
     <string name="digital_widget_message_summary">„Städte im Widget anzeigen“ muss deaktiviert sein, um auf diese Einstellung zugreifen zu können</string>
-    <string name="digital_widget_max_clock_font_size_title">Schriftgröße der Hauptuhr</string>
+    <string name="max_clock_font_size_title">Schriftgröße der Hauptuhr</string>
     <string name="FSN_dialog_text">Damit der Alarm bei ausgeschaltetem Bildschirm ausgelöst werden kann, muss seit Android 14 die Berechtigung für \"Vollbild-​Benachrichtigungen\" aktiviert sein.</string>
     <string name="gnu_gpl">GNU General Public Lizenz v3.0</string>
     <string name="app_slogan">100% FOSS; „Clock“ basiert auf AOSP</string>
@@ -431,18 +425,17 @@
     <string name="clock_settings_summary">Einstellen von Stil, Zeitzone und Ändern von Datum und Uhrzeit des Geräts</string>
     <string name="about_title">Über</string>
     <string name="permission_requirement_title">Erfordernis: </string>
-    <string name="screensaver_next_alarm_color_title">Farbe des nächsten Alarms</string>
+    <string name="next_alarm_color_title">Farbe des nächsten Alarms</string>
     <string name="screensaver_brightness_title">Helligkeit</string>
     <string name="screensaver_bold_digital_clock_title">Digitaluhr <b>fett</b></string>
     <string name="screensaver_italic_digital_clock_title">Digitaluhr <i>kursiv</i></string>
     <string name="widget_background_title">Hintergrund anzeigen</string>
     <string name="background_color_title">Hintergrundfarbe</string>
-    <string name="digital_widget_city_title">Städte im Widget anzeigen</string>
-    <string name="digital_widget_clock_default_color_title">Standardfarbe für Hauptuhr verwenden</string>
+    <string name="display_city_title">Städte im Widget anzeigen</string>
+    <string name="clock_default_color_title">Standardfarbe für Hauptuhr verwenden</string>
     <string name="FSN_dialog_title">Vollbild-​Benachrichtigungen</string>
     <string name="first_launch_main_feature_message">► Helles, dunkles oder System-Thema; &lt;br&gt; &lt;br&gt; ► Anpassbarer Bildschirmschoner; &lt;br&gt; &lt;br&gt; ► Anpassbare Widgets; &lt;br&gt; &lt;br&gt; ► Unterstützung für Kacheln in den Schnelleinstellungen (für Android 7+); &lt;br&gt; &lt;br&gt; ► Sichern und Wiederherstellen von Einstellungen (außer benutzerdefinierte Signaltöne); &lt;br&gt; &lt;br&gt; ► Material-Design und dynamische Farben; &lt;br&gt; &lt;br&gt; ► Einstellen der Alarme auf ein bestimmtes Datum; &lt;br&gt; &lt;br&gt; ► Wischen, um einen Alarm zu löschen; &lt;br&gt; &lt;br&gt; ► Duplizieren eines Alarms; &lt;br&gt; &lt;br&gt; ► Kippen und Schütteln zum Ausschalten/Aufschieben eines Alarms; &lt;br&gt; &lt;br&gt; ► Ausschalten/Aufschieben des Alarms mit der Power- oder den Lautstärketasten; &lt;br&gt; &lt;br&gt; ► %s</string>
     <string name="first_launch_important_info_message">Um sicherzustellen, dass die Anwendung ordnungsgemäß funktioniert, &lt;b&gt;müssen einige Ihrer Geräteeinstellungen geändert werden:&lt;/b&gt; &lt;br&gt; &lt;br&gt; • &lt;b&gt;AKKU-OPTIMIERUNG;&lt;/b&gt; &lt;br&gt; &lt;br&gt; • &lt;b&gt;BENACHRICHTIGUNGEN;&lt;/b&gt; &lt;br&gt; &lt;br&gt; %s &lt;i&gt;Abhängig von der Android-Version Ihres Geräts sind einige dieser Einstellungen bereits optimiert (z. B. Benachrichtigungen).&lt;/i&gt; &lt;br&gt; &lt;br&gt; Sie können sie jetzt oder später in den Einstellungen zur Berechtigungsverwaltung ändern:</string>
-    <string name="about_dialog_message">• Einstellen der Alarme auf ein bestimmtes Datum; \n\n• Kippen und Schütteln zum Ausschalten/Aufschieben des Alarms; \n \n• Ausschalten/Aufschieben des Alarms mit der Power- oder den Lautstärketasten; \n \n• Nur bei Snapdragon-​Smart­phones: Der Alarm wird auch ausgelöst, wenn sie ausgeschaltet sind; \n\t\tLeider funktioniert dies auf einigen Geräten nicht, obwohl die System-App <i>\"com.qualcomm.qti.poweroffalarm\"</i> vorhanden ist. \n \n• Wischen, um einen Alarm zu beenden; \n \n• Möglichkeit, Alarme zu duplizieren; \n \n• Alarm-Titel erstellen und ändern; \n \n• Individuell anpassbare Signaltöne; \n \n• Helles, dunkles oder System-Thema; \n \n• AMOLED-Modus für dunkles Thema; \n \n• Digitaler oder analoger Uhrenstil; \n \n• Anzeige der Heimatzeit auf Reisen; \n \n• Anzeige der Uhrzeit von vielen Städten der Welt; \n \n• Timer und Stoppuhr enthalten; \n \n• Möglichkeit, Stoppuhr-​Zeiten mit Adressbuch-Kontakten zu teilen; \n \n• Anpassbarer Bildschirm­schoner; \n \n• Moderne Widgets; \n \n• Anpassbare Widgets; \n\n• Unterstützung für Kacheln in den Schnelleinstellungen (Android 7+); \n \n• App-Einstellungen sichern und wiederherstellen (mit Ausnahme von benutzerdefinierten Signaltönen); \n\n• Material You Design; \n \n• Dynamische Farben für Android 12+;</string>
     <string name="material_time_picker_style_title">Zeitauswahl-Stil</string>
     <string name="material_you_vertical_digital_widget">Vertikale \'Material You\' Digitaluhr</string>
     <string name="snooze_button_color">Farbe des \"Schlummer\"-Buttons</string>
@@ -456,7 +449,7 @@
     <string name="settings_fade_transitions_title">Einblenden von Übergängen beim Bildschirmwechsel</string>
     <string name="vertical_digital_widget">Vertikale Digitaluhr</string>
     <string name="sort_timer_title">Sortierung der Timer</string>
-    <string name="next_alarm_widget_default_alarm_title_color">Standardfarbe für Alarm-Namen verwenden</string>
+    <string name="alarm_title_default_color">Standardfarbe für Alarm-Namen verwenden</string>
     <string name="denied_permission_label">Zugriff verweigert</string>
     <string name="alarm_title_color">Farbe des Alarm-Namens</string>
     <string name="alarm_display_customization_title">Anpassen der Alarmanzeige</string>
@@ -468,14 +461,12 @@
     <string name="next_alarm_widget_text">Nächster Alarm</string>
     <string name="next_alarm_widget_title_no_alarm">Kein anstehender Alarm</string>
     <string name="license_dialog_message">Lesen Sie die Lizenz: \n \n%s</string>
-    <string name="contributors_dialog_message">Besuchen Sie %1$s\'s GitHub-Seite: \n \n%2$s</string>
-    <string name="digital_widget_default_minutes_color_title">Standardfarbe für Minuten verwenden</string>
-    <string name="digital_widget_custom_minutes_color_title">Benutzerdefinierte Farbe der Minuten</string>
+    <string name="minute_default_color_title">Standardfarbe für Minuten verwenden</string>
+    <string name="minute_color_title">Farbe der Minuten</string>
     <string name="widgets_settings_summary">Stil, Farben und Schriftgröße der Widgets festlegen</string>
-    <string name="next_alarm_widget_custom_title_color">Benutzerdefinierte Farbe des \"Nächster Alarm\"- und \"Kein anstehender Alarm\"-Titels</string>
-    <string name="digital_widget_custom_hours_color_title">Benutzerdefinierte Farbe der Stunden</string>
-    <string name="next_alarm_widget_default_title_color">Standardfarbe für die Titel \"Nächster Alarm\" und \"Kein anstehender Alarm\" verwenden</string>
-    <string name="next_alarm_widget_custom_alarm_title_color">Benutzerdefinierte Farbe des Alarm-Namens</string>
+    <string name="next_alarm_no_upcoming_alarm_titles_color">Benutzerdefinierte Farbe des \"Nächster Alarm\"- und \"Kein anstehender Alarm\"-Titels</string>
+    <string name="hour_color_title">Benutzerdefinierte Farbe der Stunden</string>
+    <string name="next_alarm_no_upcoming_alarm_titles_default_color">Standardfarbe für die Titel \"Nächster Alarm\" und \"Kein anstehender Alarm\" verwenden</string>
     <string name="widgets_settings">Widgets</string>
     <string name="label_default">Standard</string>
     <string name="light_theme">Hell</string>
@@ -497,19 +488,7 @@
     <string name="alarm_notification_reminder_12_hours">12 Stunden vorher</string>
     <string name="snooze_duration_none">Keine</string>
     <string name="sort_timer_ascending_duration">Nach Dauer (aufsteigend)</string>
-    <string name="sort_timer_name">Nach Name</string>
-    <string name="default_time_to_add_to_timer_1_minute">1 Minute</string>
-    <string name="default_time_to_add_to_timer_2_minutes">2 Minuten</string>
-    <string name="default_time_to_add_to_timer_3_minutes">3 Minuten</string>
-    <string name="default_time_to_add_to_timer_5_minutes">5 Minuten</string>
-    <string name="default_time_to_add_to_timer_6_minutes">6 Minuten</string>
-    <string name="default_time_to_add_to_timer_7_minutes">7 Minuten</string>
-    <string name="default_time_to_add_to_timer_8_minutes">8 Minuten</string>
-    <string name="default_time_to_add_to_timer_9_minutes">9 Minuten</string>
-    <string name="default_time_to_add_to_timer_10_minutes">10 Minuten</string>
-    <string name="default_time_to_add_to_timer_30_minutes">30 Minuten</string>
-    <string name="default_time_to_add_to_timer_1_hour">1 Stunde</string>
-    <string name="default_time_to_add_to_timer_4_minutes">4 Minuten</string>
+    <string name="sort_name">Nach Name</string>
     <string name="sort_timer_descending_duration">Nach Dauer (absteigend)</string>
     <string name="timer_flip_action_title">Das Gerät umdrehen, um den Timer zu stoppen</string>
     <string name="occasional_alarm_deleted">Der einmalige Alarm um <xliff:g example="14:20" id="alarm_time">%s</xliff:g> wurde gelöscht</string>
@@ -522,8 +501,8 @@
     <string name="sw_long_press_volume_down_action_title">Leiser-Taste (lange drücken)</string>
     <string name="alarm_alert_dismiss_and_delete_text">Ausschalten &amp; Löschen</string>
     <string name="alarm_alert_off_and_deleted_text">Alarm ausgeschaltet und gelöscht</string>
-    <string name="digital_widget_default_hours_color_title">Standardfarbe für Stunden verwenden</string>
-    <string name="next_alarm_widget_max_font_size_title">Schriftgröße des Widgets</string>
+    <string name="hour_default_color_title">Standardfarbe für Stunden verwenden</string>
+    <string name="widget_max_font_size_title">Schriftgröße des Widgets</string>
     <string name="toast_message_for_restore">Wiederherstellung abgeschlossen</string>
     <string name="black_accent_color">Schwarz</string>
     <string name="sw_volume_up_action_title">Lauter-Taste</string>
@@ -546,17 +525,13 @@
     <string name="backup_restore_summary">Sichern oder Wiederherstellen von App-Einstellungen (mit Ausnahme von benutzerdefinierten Signaltönen)</string>
     <string name="backup_restore_dialog_message">Möchten Sie die Einstellungen sichern oder aus einer Datei wiederherstellen?</string>
     <string name="toast_message_for_backup">Sicherung abgeschlossen</string>
-    <string name="seconds_hand_color_title">Farbe des Sekundenzeigers</string>
+    <string name="second_hand_color_title">Farbe des Sekundenzeigers</string>
     <string name="auto_night_accent_color_title">Akzentfarbe im Nacht-Modus anwenden</string>
     <string name="night_accent_color_title">Akzentfarbe für Nacht-Modus</string>
-    <string name="auto_silence_5_seconds">5 Sekunden</string>
-    <string name="auto_silence_10_seconds">10 Sekunden</string>
-    <string name="auto_silence_20_seconds">20 Sekunden</string>
-    <string name="auto_silence_30_seconds">30 Sekunden</string>
     <string name="display_warning_before_deleting_timer_title">Warnung vor dem Löschen eines Timers anzeigen</string>
     <string name="warning_dialog_title">Timer löschen</string>
     <string name="warning_dialog_message">Sind Sie sicher, dass Sie den Timer \"%s\" löschen wollen?</string>
-    <string name="sort_timer_manually">Manuell (durch Verschieben)</string>
+    <string name="sort_manually">Manuell (durch Verschieben)</string>
     <string name="display_ringtone_title">Name des Signaltons anzeigen</string>
     <string name="alarm_flash">LED-Blitzlicht</string>
     <string name="shake_intensity_title">Intensität des Schüttelns</string>
@@ -584,10 +559,6 @@
     <string name="show_lockscreen_dialog_text">Auf Xiaomi-Geräten müssen Sie die Berechtigung \"Auf dem Sperrbildschirm anzeigen\" manuell in den Geräteeinstellungen aktivieren, damit die Anwendung ordnungsgemäß funktioniert.</string>
     <string name="clock_style_analog_material">Analog (Material)</string>
     <string name="settings_language_dutch">Niederländisch</string>
-    <string name="analog_widget_choice_title">Wählen Sie ihren Stil</string>
-    <string name="analog_widget_without_second_hand_title">Ohne Sekundenzeiger</string>
-    <string name="analog_widget_with_second_hand_title">Mit Sekundenzeiger</string>
-    <string name="analog_widget_configuration_warning">Dieses Widget ist erst ab Android 12 konfigurierbar</string>
     <string name="settings_language_russian">Russisch</string>
     <string name="clock_style_spinner">Scrollen</string>
     <string name="settings_tab_to_display">Tab, der beim Öffnen der App angezeigt wird</string>
@@ -596,7 +567,6 @@
     <string name="timer_time_warning_box_title">Falscher Wert eingegeben</string>
     <string name="settings_language_turkish">Türkisch</string>
     <string name="reset_settings_title">Einstellungen zurücksetzen</string>
-    <string name="contributors_dialog_title">Profil ansehen</string>
     <string name="reset_settings_message">Sind Sie sicher, dass Sie alle App-Einstellungen zurücksetzen wollen?\n\nHinweis: Benutzerdefinierte Signaltöne werden nicht zurückgesetzt.</string>
     <string name="blue_accent_color">Blau</string>
     <string name="toast_message_for_reset">Zurücksetzen abgeschlossen</string>
@@ -605,7 +575,6 @@
     <string name="settings_toolbar_title">Titel in der Symbolleiste anzeigen</string>
     <string name="settings_tab_title_visibility_title">Tab-Titel anzeigen</string>
     <string name="tab_title_visibility_always">Immer</string>
-    <string name="tab_title_visibility_never">Nie</string>
     <string name="tab_title_visibility_when_selected">Wenn ausgewählt</string>
     <string name="settings_language_czech">Tschechisch</string>
     <string name="settings_keep_screen_on_title">Bildschirm eingeschaltet lassen</string>
@@ -650,4 +619,43 @@
     <string name="system_media_volume_title">Medienlautstärke des Systems verwenden</string>
     <string name="system_media_volume_summary">Funktioniert nur, wenn ein Bluetooth-Gerät verbunden ist</string>
     <string name="widget_apply_horizontal_padding_title">Abstand zu den Widget-Seiten hinzufügen</string>
+    <string name="enable_per_alarm_volume_title">Für jeden Alarm eine eigene Lautstärke verwenden</string>
+    <string name="delay_picker_dialog_title">Alarm in…</string>
+    <string name="colors_category_title">Farben</string>
+    <string name="clock_dial_flower">Blume</string>
+    <string name="clock_dial_sun">Sonne</string>
+    <string name="clock_dial_with_numbers">Mit Ziffern</string>
+    <string name="clock_dial_without_numbers">Ohne Ziffern</string>
+    <string name="clock_second_hand_title">Sekundenzeiger</string>
+    <string name="clock_second_hand_vintage">Klassisch</string>
+    <string name="sort_alarm_title">Alarme sortieren</string>
+    <string name="sort_alarm_time">Nach Stunden</string>
+    <string name="sort_next_alarm_time">Nach nächster Alarmzeit</string>
+    <string name="display_enabled_alarms_first_title">Aktivierte Alarme zuerst anzeigen</string>
+    <string name="clock_dial_title">Zifferblatt</string>
+    <string name="sort_cities_title">Städte sortieren</string>
+    <string name="sort_cities_ascending_time_zone">Nach Zeitzone (aufsteigend)</string>
+    <string name="sort_cities_descending_time_zone">Nach Zeitzone (absteigend)</string>
+    <string name="dial_default_color_title">Standardfarbe für Zifferblatt verwenden</string>
+    <string name="hour_hand_default_color_title">Standardfarbe für Stundenzeiger verwenden</string>
+    <string name="minute_hand_color_title">Farbe des Minutenzeigers</string>
+    <string name="minute_hand_default_color_title">Standardfarbe für Minutenzeiger verwenden</string>
+    <string name="second_hand_default_color_title">Standardfarbe für Sekundenzeiger verwenden</string>
+    <string name="background_default_color_title">Standardfarbe für Hintergrund verwenden</string>
+    <string name="dial_color_title">Farbe des Zifferblatts</string>
+    <string name="hour_hand_color_title">Farbe des Stundenzeigers</string>
+    <string name="sort_descending_creation_order">Nach Erstellungsreihenfolge (älteste zuletzt)</string>
+    <string name="sort_ascending_creation_order">Nach Erstellungsreihenfolge (älteste zuerst)</string>
+    <string name="city_search_hint">Suche nach einer Stadt</string>
+    <string name="enable_city_note_title">Fügen Sie Städten eine persönliche Notiz hinzu</string>
+    <string name="enable_city_note_summary">Tippen Sie auf eine Stadt, um eine persönliche Notiz hinzuzufügen oder zu bearbeiten</string>
+    <string name="city_note_dialog_title">Hinweis für %s</string>
+    <string name="vibration_pattern_heartbeat">Herzschlag</string>
+    <string name="vibration_pattern_escalating">Steigend</string>
+    <string name="vibration_pattern_tick_tock">Ticktack</string>
+    <string name="vibration_start_delay_title">Verzögerung vor Beginn der Vibration</string>
+    <string name="vibration_start_delay_none">Keine</string>
+    <string name="vibration_pattern_title">Vibrationsmuster</string>
+    <string name="vibration_pattern_soft">Weich</string>
+    <string name="vibration_pattern_strong">Stark</string>
 </resources>

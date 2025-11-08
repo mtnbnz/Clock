@@ -11,8 +11,7 @@ import static android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT
 import static android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS;
 import static android.provider.Settings.EXTRA_APP_PACKAGE;
 
-import static com.best.deskclock.DeskClock.REQUEST_CHANGE_PERMISSIONS;
-import static com.best.deskclock.DeskClock.REQUEST_CHANGE_SETTINGS;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_ESSENTIAL_PERMISSIONS_GRANTED;
 
 import android.annotation.SuppressLint;
 import android.app.NotificationManager;
@@ -22,7 +21,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
@@ -41,21 +39,15 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.best.deskclock.R;
 import com.best.deskclock.data.SettingsDAO;
+import com.best.deskclock.uicomponents.CollapsingToolbarBaseActivity;
+import com.best.deskclock.utils.DeviceUtils;
 import com.best.deskclock.utils.InsetsUtils;
 import com.best.deskclock.utils.SdkUtils;
 import com.best.deskclock.utils.ThemeUtils;
-import com.best.deskclock.widget.CollapsingToolbarBaseActivity;
 
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Manage the permissions required to ensure the application runs properly.
@@ -160,7 +152,7 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
                 updateFullScreenNotificationsCard(isCardBackgroundDisplayed, isCardBorderDisplayed);
             }
 
-            if (MiuiCheck.isMiui()) {
+            if (DeviceUtils.isMiui()) {
                 mShowLockscreenView = rootView.findViewById(R.id.show_lockscreen_view);
                 mShowLockscreenView.setVisibility(View.VISIBLE);
                 mShowLockscreenView.setOnClickListener(v -> grantShowOnLockScreenPermissionXiaomi());
@@ -191,6 +183,8 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
         public void onResume() {
             super.onResume();
 
+            updateEssentialPermissionsPref();
+
             setStatusText();
         }
 
@@ -200,7 +194,7 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
          * accordingly.
          */
         private void applyWindowInsets() {
-            InsetsUtils.doOnApplyWindowInsets(mCoordinatorLayout, (v, insets, initialPadding) -> {
+            InsetsUtils.doOnApplyWindowInsets(mCoordinatorLayout, (v, insets) -> {
                 // Get the system bar and notch insets
                 Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() |
                         WindowInsetsCompat.Type.displayCutout());
@@ -222,11 +216,10 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
             final Intent intentRevoke =
                     new Intent(ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).addFlags(FLAG_ACTIVITY_NEW_TASK);
 
-            if (!isIgnoringBatteryOptimizations(requireContext())) {
-                startActivity(intentGrant);
-                sendPermissionResult();
-            } else {
+            if (isIgnoringBatteryOptimizations(requireContext())) {
                 displayRevocationDialog(intentRevoke);
+            } else {
+                startActivity(intentGrant);
             }
         }
 
@@ -247,10 +240,8 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
                         .setIcon(R.drawable.ic_notifications)
                         .setTitle(R.string.notifications_dialog_title)
                         .setMessage(R.string.notifications_dialog_text)
-                        .setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                            startActivity(intent);
-                            sendPermissionResult();
-                        })
+                        .setPositiveButton(android.R.string.ok, (dialog, which) ->
+                                startActivity(intent))
                         .setNegativeButton(android.R.string.cancel, null)
                         .show();
             } else {
@@ -260,8 +251,6 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
                     startActivity(intent);
                 }
             }
-
-            sendPermissionResult();
         }
 
         /**
@@ -274,7 +263,6 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
 
                 if (!areFullScreenNotificationsEnabled(requireContext())) {
                     startActivity(intent);
-                    sendPermissionResult();
                 } else {
                     displayRevocationDialog(intent);
                 }
@@ -295,7 +283,7 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
          * Grant Show On Lock Screen permission for Xiaomi devices
          */
         private void grantShowOnLockScreenPermissionXiaomi() {
-            if (!MiuiCheck.isMiui()) {
+            if (!DeviceUtils.isMiui()) {
                 return;
             }
 
@@ -320,7 +308,7 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
                     .setIcon(iconId)
                     .setTitle(titleId)
                     .setMessage(messageId)
-                    .setPositiveButton(R.string.permission_dialog_close_button, null)
+                    .setPositiveButton(R.string.dialog_close, null)
                     .show();
         }
 
@@ -332,25 +320,10 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
                     .setIcon(R.drawable.ic_key_off)
                     .setTitle(R.string.permission_dialog_revoke_title)
                     .setMessage(R.string.revoke_permission_dialog_message)
-                    .setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                        startActivity(intent);
-                        sendPermissionResult();
-                    })
+                    .setPositiveButton(android.R.string.ok, (dialog, which) ->
+                            startActivity(intent))
                     .setNegativeButton(android.R.string.cancel, null)
                     .show();
-        }
-
-        /**
-         * Sends the result of a permission request to the calling activity or parent fragment.
-         * If the permission is granted, a result indicating success is sent.
-         * This can be used by the calling component to perform any subsequent actions based on the permission result.
-         */
-        private void sendPermissionResult() {
-            if (requireActivity() instanceof SettingsActivity) {
-                requireActivity().setResult(REQUEST_CHANGE_SETTINGS);
-            } else {
-                requireActivity().setResult(REQUEST_CHANGE_PERMISSIONS);
-            }
         }
 
         /**
@@ -420,6 +393,11 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
                     || SdkUtils.isAtLeastAndroid14() && !areFullScreenNotificationsEnabled(context);
         }
 
+        private void updateEssentialPermissionsPref() {
+            boolean granted = !areEssentialPermissionsNotGranted(requireContext());
+            mPrefs.edit().putBoolean(KEY_ESSENTIAL_PERMISSIONS_GRANTED, granted).apply();
+        }
+
         private void updateCardViews(boolean isCardBackgroundDisplayed, boolean isCardBorderDisplayed) {
             if (isCardBackgroundDisplayed) {
                 mIgnoreBatteryOptimizationsView.setCardBackgroundColor(
@@ -435,13 +413,13 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
 
             if (isCardBorderDisplayed) {
                 mIgnoreBatteryOptimizationsView.setStrokeWidth(ThemeUtils.convertDpToPixels(2, requireContext()));
-                mIgnoreBatteryOptimizationsView.setStrokeColor(
-                        MaterialColors.getColor(requireContext(), com.google.android.material.R.attr.colorPrimary, Color.BLACK)
+                mIgnoreBatteryOptimizationsView.setStrokeColor(MaterialColors.getColor(
+                        requireContext(), androidx.appcompat.R.attr.colorPrimary, Color.BLACK)
                 );
 
                 mNotificationView.setStrokeWidth(ThemeUtils.convertDpToPixels(2, requireContext()));
-                mNotificationView.setStrokeColor(
-                        MaterialColors.getColor(requireContext(), com.google.android.material.R.attr.colorPrimary, Color.BLACK)
+                mNotificationView.setStrokeColor(MaterialColors.getColor(
+                        requireContext(), androidx.appcompat.R.attr.colorPrimary, Color.BLACK)
                 );
             }
         }
@@ -456,8 +434,8 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
 
             if (isCardBorderDisplayed) {
                 mFullScreenNotificationsView.setStrokeWidth(ThemeUtils.convertDpToPixels(2, requireContext()));
-                mFullScreenNotificationsView.setStrokeColor(
-                        MaterialColors.getColor(requireContext(), com.google.android.material.R.attr.colorPrimary, Color.BLACK));
+                mFullScreenNotificationsView.setStrokeColor(MaterialColors.getColor(
+                        requireContext(), androidx.appcompat.R.attr.colorPrimary, Color.BLACK));
             }
         }
 
@@ -471,71 +449,9 @@ public class PermissionsManagementActivity extends CollapsingToolbarBaseActivity
 
             if (isCardBorderDisplayed) {
                 mShowLockscreenView.setStrokeWidth(ThemeUtils.convertDpToPixels(2, requireContext()));
-                mShowLockscreenView.setStrokeColor(
-                        MaterialColors.getColor(requireContext(), com.google.android.material.R.attr.colorPrimary, Color.BLACK));
+                mShowLockscreenView.setStrokeColor(MaterialColors.getColor(
+                        requireContext(), androidx.appcompat.R.attr.colorPrimary, Color.BLACK));
             }
-        }
-
-    }
-
-    /**
-     * Class called to check if the device is running MIUI.
-     */
-    public static class MiuiCheck {
-
-        /**
-         * Check if the device is running MIUI.
-         * <p>
-         * By default, HyperOS is excluded from verification.
-         * If you want to include HyperOS in the verification, pass excludeHyperOS as false.
-         *
-         * @param excludeHyperOS Indicate whether to exclude HyperOS.
-         * @return {@code true} if the device is running MIUI ; {@code false} otherwise.
-         */
-        public static boolean isMiui(boolean excludeHyperOS) {
-            // Check if the device is from Xiaomi, Redmi or POCO.
-            String brand = Build.BRAND.toLowerCase();
-            Set<String> xiaomiBrands = new HashSet<>(Arrays.asList("xiaomi", "redmi", "poco"));
-            if (!xiaomiBrands.contains(brand)) {
-                return false;
-            }
-
-            // This feature is present in both MIUI and HyperOS.
-            String miuiVersion = getProperty("ro.miui.ui.version.name");
-            boolean isMiui = miuiVersion != null && !miuiVersion.trim().isEmpty();
-            // This feature is exclusive to HyperOS and is not present in MIUI.
-            String hyperOSVersion = getProperty("ro.mi.os.version.name");
-            boolean isHyperOS = hyperOSVersion != null && !hyperOSVersion.trim().isEmpty();
-
-            return isMiui && (!excludeHyperOS || !isHyperOS);
-        }
-
-        /**
-         * Private method to get the value of a system property.
-         */
-        private static String getProperty(String property) {
-            BufferedReader reader = null;
-            try {
-                Process process = Runtime.getRuntime().exec("getprop " + property);
-                reader = new BufferedReader(new InputStreamReader(process.getInputStream()), 1024);
-                return reader.readLine();
-            } catch (IOException ignored) {
-                return null;
-            } finally {
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (IOException ignored) {
-                    }
-                }
-            }
-        }
-
-        /**
-         * Overload of isMiui method with excludeHyperOS set to true by default.
-         */
-        public static boolean isMiui() {
-            return isMiui(true);
         }
 
     }

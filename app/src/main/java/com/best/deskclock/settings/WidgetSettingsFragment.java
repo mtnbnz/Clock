@@ -2,7 +2,9 @@
 
 package com.best.deskclock.settings;
 
+import static com.best.deskclock.settings.PreferencesKeys.KEY_ANALOG_WIDGET_CUSTOMIZATION;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_DIGITAL_WIDGET_CUSTOMIZATION;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_ANALOG_WIDGET_CUSTOMIZATION;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_DIGITAL_WIDGET_CUSTOMIZATION;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_CUSTOMIZATION;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_MATERIAL_YOU_VERTICAL_DIGITAL_WIDGET_CUSTOMIZATION;
@@ -14,14 +16,15 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.preference.Preference;
 
-import com.best.alarmclock.WidgetUtils;
 import com.best.deskclock.R;
 
 public class WidgetSettingsFragment extends ScreenFragment implements Preference.OnPreferenceClickListener {
 
+    Preference mAnalogWidgetCustomizationPref;
     Preference mDigitalWidgetCustomizationPref;
     Preference mVerticalDigitalWidgetCustomizationPref;
     Preference mNextAlarmWidgetCustomizationPref;
+    Preference mMaterialYouAnalogWidgetCustomizationPref;
     Preference mMaterialYouDigitalWidgetCustomizationPref;
     Preference mMaterialYouVerticalDigitalWidgetCustomizationPref;
     Preference mMaterialYouNextAlarmWidgetCustomizationPref;
@@ -37,26 +40,24 @@ public class WidgetSettingsFragment extends ScreenFragment implements Preference
 
         addPreferencesFromResource(R.xml.settings_widgets);
 
+        mAnalogWidgetCustomizationPref = findPreference(KEY_ANALOG_WIDGET_CUSTOMIZATION);
         mDigitalWidgetCustomizationPref = findPreference(KEY_DIGITAL_WIDGET_CUSTOMIZATION);
         mVerticalDigitalWidgetCustomizationPref = findPreference(KEY_VERTICAL_DIGITAL_WIDGET_CUSTOMIZATION);
         mNextAlarmWidgetCustomizationPref = findPreference(KEY_NEXT_ALARM_WIDGET_CUSTOMIZATION);
+        mMaterialYouAnalogWidgetCustomizationPref = findPreference(KEY_MATERIAL_YOU_ANALOG_WIDGET_CUSTOMIZATION);
         mMaterialYouDigitalWidgetCustomizationPref = findPreference(KEY_MATERIAL_YOU_DIGITAL_WIDGET_CUSTOMIZATION);
         mMaterialYouVerticalDigitalWidgetCustomizationPref = findPreference(KEY_MATERIAL_YOU_VERTICAL_DIGITAL_WIDGET_CUSTOMIZATION);
         mMaterialYouNextAlarmWidgetCustomizationPref = findPreference(KEY_MATERIAL_YOU_NEXT_ALARM_WIDGET_CUSTOMIZATION);
-    }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-
-        refresh();
+        setupPreferences();
     }
 
     @Override
     public boolean onPreferenceClick(@NonNull Preference pref) {
-        WidgetUtils.isLaunchedFromWidget = false;
-
         switch (pref.getKey()) {
+            case KEY_ANALOG_WIDGET_CUSTOMIZATION ->
+                    animateAndShowFragment(new AnalogWidgetSettingsFragment());
+
             case KEY_DIGITAL_WIDGET_CUSTOMIZATION ->
                     animateAndShowFragment(new DigitalWidgetSettingsFragment());
 
@@ -65,6 +66,9 @@ public class WidgetSettingsFragment extends ScreenFragment implements Preference
 
             case KEY_NEXT_ALARM_WIDGET_CUSTOMIZATION ->
                     animateAndShowFragment(new NextAlarmWidgetSettingsFragment());
+
+            case KEY_MATERIAL_YOU_ANALOG_WIDGET_CUSTOMIZATION ->
+                    animateAndShowFragment(new MaterialYouAnalogWidgetSettingsFragment());
 
             case KEY_MATERIAL_YOU_DIGITAL_WIDGET_CUSTOMIZATION ->
                     animateAndShowFragment(new MaterialYouDigitalWidgetSettingsFragment());
@@ -79,12 +83,16 @@ public class WidgetSettingsFragment extends ScreenFragment implements Preference
         return true;
     }
 
-    private void refresh() {
+    private void setupPreferences() {
+        mAnalogWidgetCustomizationPref.setOnPreferenceClickListener(this);
+
         mDigitalWidgetCustomizationPref.setOnPreferenceClickListener(this);
 
         mVerticalDigitalWidgetCustomizationPref.setOnPreferenceClickListener(this);
 
         mNextAlarmWidgetCustomizationPref.setOnPreferenceClickListener(this);
+
+        mMaterialYouAnalogWidgetCustomizationPref.setOnPreferenceClickListener(this);
 
         mMaterialYouDigitalWidgetCustomizationPref.setOnPreferenceClickListener(this);
 

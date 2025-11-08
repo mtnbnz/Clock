@@ -44,13 +44,13 @@ import androidx.recyclerview.widget.SimpleItemAnimator;
 
 import com.best.deskclock.DeskClockFragment;
 import com.best.deskclock.R;
+import com.best.deskclock.RunnableFragment;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.Lap;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.data.Stopwatch;
 import com.best.deskclock.data.StopwatchListener;
 import com.best.deskclock.events.Events;
-import com.best.deskclock.uidata.UiDataModel;
 import com.best.deskclock.utils.AnimatorUtils;
 import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.ThemeUtils;
@@ -62,7 +62,7 @@ import java.util.Objects;
 /**
  * Fragment that shows the stopwatch and recorded laps.
  */
-public final class StopwatchFragment extends DeskClockFragment {
+public final class StopwatchFragment extends DeskClockFragment implements RunnableFragment {
 
     /**
      * Milliseconds between redraws while running.
@@ -157,15 +157,6 @@ public final class StopwatchFragment extends DeskClockFragment {
         ((SimpleItemAnimator) Objects.requireNonNull(mLapsList.getItemAnimator())).setSupportsChangeAnimations(false);
         mLapsList.setLayoutManager(mLapsLayoutManager);
 
-        // In landscape layouts, the laps list can reach the top of the screen and thus can cause
-        // a drop shadow to appear. The same is not true for portrait landscapes.
-        if (mIsLandscape) {
-            final ScrollPositionWatcher scrollPositionWatcher = new ScrollPositionWatcher();
-            mLapsList.addOnLayoutChangeListener(scrollPositionWatcher);
-            mLapsList.addOnScrollListener(scrollPositionWatcher);
-        } else {
-            setTabScrolledToTop(true);
-        }
         mLapsList.setAdapter(mLapsAdapter);
 
         // Timer text serves as a virtual start/stop button.
@@ -188,7 +179,7 @@ public final class StopwatchFragment extends DeskClockFragment {
             mStopwatchWrapper.setOnTouchListener(new Utils.CircleTouchListener());
         }
 
-        final int colorAccent = MaterialColors.getColor(mContext, com.google.android.material.R.attr.colorPrimary, Color.BLACK);
+        final int colorAccent = MaterialColors.getColor(mContext, androidx.appcompat.R.attr.colorPrimary, Color.BLACK);
         final int textColorPrimary = mMainTimeText.getCurrentTextColor();
         final ColorStateList timeTextColor = new ColorStateList(
                 new int[][]{{-state_activated, -state_pressed}, {}},
@@ -279,8 +270,8 @@ public final class StopwatchFragment extends DeskClockFragment {
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
+    public void onPause() {
+        super.onPause();
 
         // Stop all updates while the fragment is not visible.
         stopUpdatingTime();
@@ -294,21 +285,13 @@ public final class StopwatchFragment extends DeskClockFragment {
     }
 
     @Override
-    public void onFabClick(@NonNull ImageView fab) {
+    public void onFabClick() {
         toggleStopwatchState();
     }
 
-    private void updateFab(@NonNull ImageView fab) {
-        if (mContext != null) {
-            if (getStopwatch().isRunning()) {
-                fab.setImageResource(R.drawable.ic_fab_pause);
-                fab.setContentDescription(mContext.getString(R.string.sw_pause_button));
-            } else {
-                fab.setImageResource(R.drawable.ic_fab_play);
-                fab.setContentDescription(mContext.getString(R.string.sw_start_button));
-            }
-            fab.setVisibility(VISIBLE);
-        }
+    @Override
+    public void onFabLongClick(@NonNull ImageView fab) {
+        fab.setHapticFeedbackEnabled(false);
     }
 
     @Override
@@ -356,6 +339,29 @@ public final class StopwatchFragment extends DeskClockFragment {
                     right.setOnClickListener(v -> doShare());
                 }
             }
+        }
+    }
+
+    @Override
+    public void startRunnable() {
+        startUpdatingTime();
+    }
+
+    @Override
+    public void stopRunnable() {
+        stopUpdatingTime();
+    }
+
+    private void updateFab(@NonNull ImageView fab) {
+        if (mContext != null) {
+            if (getStopwatch().isRunning()) {
+                fab.setImageResource(R.drawable.ic_fab_pause);
+                fab.setContentDescription(mContext.getString(R.string.sw_pause_button));
+            } else {
+                fab.setImageResource(R.drawable.ic_fab_play);
+                fab.setContentDescription(mContext.getString(R.string.sw_start_button));
+            }
+            fab.setVisibility(VISIBLE);
         }
     }
 
@@ -512,7 +518,11 @@ public final class StopwatchFragment extends DeskClockFragment {
     /**
      * Post the first runnable to update times within the UI. It will reschedule itself as needed.
      */
-    private void startUpdatingTime() {
+    public void startUpdatingTime() {
+        if (!isTabSelected() || getStopwatch().isReset()) {
+            return;
+        }
+
         // Ensure only one copy of the runnable is ever scheduled by first stopping updates.
         stopUpdatingTime();
         mMainTimeText.post(mTimeUpdateRunnable);
@@ -521,7 +531,7 @@ public final class StopwatchFragment extends DeskClockFragment {
     /**
      * Remove the runnable that updates times within the UI.
      */
-    private void stopUpdatingTime() {
+    public void stopUpdatingTime() {
         mMainTimeText.removeCallbacks(mTimeUpdateRunnable);
     }
 
@@ -535,6 +545,14 @@ public final class StopwatchFragment extends DeskClockFragment {
         final Stopwatch stopwatch = getStopwatch();
         final long totalTime = stopwatch.getTotalTime();
         mStopwatchTextController.setTimeString(totalTime);
+
+        // Explicitly reset alpha to 1f to ensure the text is visible when the stopwatch resumes.
+        if (mMainTimeText.getAlpha() != 1f) {
+            mMainTimeText.setAlpha(1f);
+        }
+        if (mHundredthsTimeText.getAlpha() != 1f) {
+            mHundredthsTimeText.setAlpha(1f);
+        }
 
         // Update the current lap.
         final boolean currentLapIsVisible = mLapsLayoutManager.findFirstVisibleItemPosition() == 0;
@@ -554,12 +572,10 @@ public final class StopwatchFragment extends DeskClockFragment {
             mTime.update();
         }
 
-        final Stopwatch stopwatch = getStopwatch();
-        if (!stopwatch.isReset()) {
-            startUpdatingTime();
-        }
+        startUpdatingTime();
 
         // Adjust the visibility of the list of laps.
+        final Stopwatch stopwatch = getStopwatch();
         showOrHideLaps(stopwatch.isReset());
 
         // Update button states.
@@ -644,14 +660,17 @@ public final class StopwatchFragment extends DeskClockFragment {
             final boolean blink = stopwatch.isPaused()
                     && startTime % 1000 < 500
                     && !touchTarget.isPressed();
+            final float textTargetAlpha = blink ? 0f : 1f;
 
-            if (blink) {
-                mMainTimeText.setAlpha(0f);
-                mHundredthsTimeText.setAlpha(0f);
-            } else {
-                mMainTimeText.setAlpha(1f);
-                mHundredthsTimeText.setAlpha(1f);
-            }
+            mMainTimeText.animate()
+                    .alpha(textTargetAlpha)
+                    .setDuration(200)
+                    .start();
+
+            mHundredthsTimeText.animate()
+                    .alpha(textTargetAlpha)
+                    .setDuration(200)
+                    .start();
 
             if (!stopwatch.isReset()) {
                 final long period = stopwatch.isPaused()
@@ -673,7 +692,6 @@ public final class StopwatchFragment extends DeskClockFragment {
             adjustWakeLock();
 
             if (after.isReset()) {
-                setTabScrolledToTop(true);
                 if (DataModel.getDataModel().isApplicationInForeground()) {
                     updateUI(BUTTONS_IMMEDIATE);
                 }
@@ -683,7 +701,6 @@ public final class StopwatchFragment extends DeskClockFragment {
                 updateUI(FAB_MORPH | BUTTONS_IMMEDIATE);
             }
         }
-
     }
 
     /**
@@ -701,21 +718,4 @@ public final class StopwatchFragment extends DeskClockFragment {
         }
     }
 
-    /**
-     * Updates the vertical scroll state of this tab in the {@link UiDataModel} as the user scrolls
-     * the recyclerview or when the size/position of elements within the recyclerview changes.
-     */
-    private final class ScrollPositionWatcher extends RecyclerView.OnScrollListener
-            implements View.OnLayoutChangeListener {
-        @Override
-        public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-            setTabScrolledToTop(Utils.isScrolledToTop(mLapsList));
-        }
-
-        @Override
-        public void onLayoutChange(View v, int left, int top, int right, int bottom,
-                                   int oldLeft, int oldTop, int oldRight, int oldBottom) {
-            setTabScrolledToTop(Utils.isScrolledToTop(mLapsList));
-        }
-    }
 }

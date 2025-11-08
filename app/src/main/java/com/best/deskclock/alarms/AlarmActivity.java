@@ -26,7 +26,14 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.BlurMaskFilter;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -47,13 +54,13 @@ import android.widget.TextClock;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.WindowCompat;
 
+import com.best.deskclock.BaseActivity;
 import com.best.deskclock.R;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.DataModel.PowerButtonBehavior;
@@ -62,6 +69,8 @@ import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.events.Events;
 import com.best.deskclock.provider.Alarm;
 import com.best.deskclock.provider.AlarmInstance;
+import com.best.deskclock.uicomponents.AnalogClock;
+import com.best.deskclock.uicomponents.PillView;
 import com.best.deskclock.utils.AlarmUtils;
 import com.best.deskclock.utils.AnimatorUtils;
 import com.best.deskclock.utils.ClockUtils;
@@ -69,11 +78,12 @@ import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.RingtoneUtils;
 import com.best.deskclock.utils.SdkUtils;
 import com.best.deskclock.utils.ThemeUtils;
-import com.best.deskclock.widget.AnalogClock;
-import com.best.deskclock.widget.PillView;
+import com.best.deskclock.utils.Utils;
 import com.google.android.material.button.MaterialButton;
 
-public class AlarmActivity extends AppCompatActivity implements View.OnClickListener, View.OnTouchListener {
+import java.io.File;
+
+public class AlarmActivity extends BaseActivity implements View.OnClickListener, View.OnTouchListener {
 
     private static final LogUtils.Logger LOGGER = new LogUtils.Logger("AlarmActivity");
 
@@ -105,6 +115,10 @@ public class AlarmActivity extends AppCompatActivity implements View.OnClickList
     private PowerButtonBehavior mPowerBehavior;
     private float mAlarmTitleFontSize;
     private int mAlarmTitleColor;
+    private boolean mIsTextShadowDisplayed;
+    private int mShadowColor;
+    private int mShadowOffset;
+    private float mShadowRadius;
     private boolean mIsSwipeActionEnabled;
     private boolean mReceiverRegistered;
     /**
@@ -174,7 +188,9 @@ public class AlarmActivity extends AppCompatActivity implements View.OnClickList
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mPrefs = getDefaultSharedPreferences(this);
+        Context storageContext = Utils.getSafeStorageContext(this);
+
+        mPrefs = getDefaultSharedPreferences(storageContext);
 
         // Register Power button (screen off) intent receiver
         IntentFilter filter = new IntentFilter();
@@ -234,7 +250,36 @@ public class AlarmActivity extends AppCompatActivity implements View.OnClickList
         int alarmBackgroundColor = isAmoledMode
                 ? SettingsDAO.getAlarmBackgroundAmoledColor(mPrefs)
                 : SettingsDAO.getAlarmBackgroundColor(mPrefs);
-        getWindow().setBackgroundDrawable(new ColorDrawable(alarmBackgroundColor));
+        final String imagePath = SettingsDAO.getAlarmBackgroundImage(mPrefs);
+        final ImageView alarmBackgroundImage = findViewById(R.id.alarm_image_background);
+
+        // Apply a background image and a blur effect.
+        if (SettingsDAO.isAlarmBackgroundImageEnabled(mPrefs) && imagePath != null) {
+            alarmBackgroundImage.setVisibility(View.VISIBLE);
+
+            File imageFile = new File(imagePath);
+            if (imageFile.exists()) {
+                Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+                if (bitmap != null) {
+                    alarmBackgroundImage.setImageBitmap(bitmap);
+                    alarmBackgroundImage.setColorFilter(alarmBackgroundColor);
+
+                    if (SdkUtils.isAtLeastAndroid12() && SettingsDAO.isAlarmBlurEffectEnabled(mPrefs)) {
+                        float intensity = SettingsDAO.getAlarmBlurIntensity(mPrefs);
+                        RenderEffect blur = RenderEffect.createBlurEffect(intensity, intensity, Shader.TileMode.CLAMP);
+                        alarmBackgroundImage.setRenderEffect(blur);
+                    }
+                } else {
+                    LogUtils.e("Bitmap null for path: " + imagePath);
+                    getWindow().setBackgroundDrawable(new ColorDrawable(alarmBackgroundColor));
+                }
+            } else {
+                LogUtils.e("Image file not found: " + imagePath);
+                getWindow().setBackgroundDrawable(new ColorDrawable(alarmBackgroundColor));
+            }
+        } else {
+            getWindow().setBackgroundDrawable(new ColorDrawable(alarmBackgroundColor));
+        }
 
         mIsSwipeActionEnabled = SettingsDAO.isSwipeActionEnabled(mPrefs);
 
@@ -242,6 +287,10 @@ public class AlarmActivity extends AppCompatActivity implements View.OnClickList
         float alarmDigitalClockFontSize = SettingsDAO.getAlarmDigitalClockFontSize(mPrefs);
         mAlarmTitleFontSize = SettingsDAO.getAlarmTitleFontSize(mPrefs);
         mAlarmTitleColor = SettingsDAO.getAlarmTitleColor(mPrefs);
+        mIsTextShadowDisplayed = SettingsDAO.isAlarmTextShadowDisplayed(mPrefs);
+        mShadowColor = SettingsDAO.getAlarmShadowColor(mPrefs);
+        mShadowOffset = SettingsDAO.getAlarmShadowOffset(mPrefs);
+        mShadowRadius = mShadowOffset * 0.5f;
 
         mAlertView = findViewById(R.id.alert);
         mAlertTitleView = mAlertView.findViewById(R.id.alert_title);
@@ -259,9 +308,9 @@ public class AlarmActivity extends AppCompatActivity implements View.OnClickList
         final AnalogClock analogClock = findViewById(R.id.analog_clock);
         final TextClock digitalClock = mContentView.findViewById(R.id.digital_clock);
         final DataModel.ClockStyle alarmClockStyle = SettingsDAO.getAlarmClockStyle(mPrefs);
-        final boolean isAlarmSecondsHandDisplayed = SettingsDAO.isAlarmSecondsHandDisplayed(mPrefs);
+        final boolean isAlarmSecondHandDisplayed = SettingsDAO.isAlarmSecondHandDisplayed(mPrefs);
         ClockUtils.setClockStyle(alarmClockStyle, digitalClock, analogClock);
-        ClockUtils.setClockSecondsEnabled(alarmClockStyle, digitalClock, analogClock, isAlarmSecondsHandDisplayed);
+        ClockUtils.setClockSecondsEnabled(alarmClockStyle, digitalClock, analogClock, isAlarmSecondHandDisplayed);
         ClockUtils.setTimeFormat(digitalClock, false);
         digitalClock.setTextSize(TypedValue.COMPLEX_UNIT_SP, alarmDigitalClockFontSize);
         digitalClock.setTextColor(alarmClockColor);
@@ -272,6 +321,12 @@ public class AlarmActivity extends AppCompatActivity implements View.OnClickList
         titleView.setTextColor(mAlarmTitleColor);
         // Allow text scrolling (all other attributes are indicated in the "alarm_activity.xml" file)
         titleView.setSelected(true);
+
+        // Display a shadow if enabled in the settings
+        if (mIsTextShadowDisplayed) {
+            digitalClock.setShadowLayer(mShadowRadius, mShadowOffset, mShadowOffset, mShadowColor);
+            titleView.setShadowLayer(mShadowRadius, mShadowOffset, mShadowOffset, mShadowColor);
+        }
 
         if (mIsSwipeActionEnabled) {
             mSlideZoneLayout.setVisibility(VISIBLE);
@@ -292,26 +347,31 @@ public class AlarmActivity extends AppCompatActivity implements View.OnClickList
             mAlarmButton.setBackgroundColor(alarmButtonColor);
             mAlarmButton.setOnTouchListener(this);
             if (mAlarmInstance.mSnoozeDuration == ALARM_SNOOZE_DURATION_DISABLED) {
-                if (isOccasionalAlarmDeletedAfterUse()) {
-                    mAlarmButton.setContentDescription(getString(
-                            R.string.description_direction_both_for_occasional_non_repeatable_alarm));
-                } else {
-                    mAlarmButton.setContentDescription(getString(
-                            R.string.description_direction_both_for_non_repeatable_alarm));
-                }
+                mAlarmButton.setContentDescription(getString(isOccasionalAlarmDeletedAfterUse()
+                        ? R.string.description_direction_both_for_occasional_non_repeatable_alarm
+                        : R.string.description_direction_both_for_non_repeatable_alarm)
+                );
             } else {
-                if (isOccasionalAlarmDeletedAfterUse()) {
-                    mAlarmButton.setContentDescription(getString(
-                            R.string.description_direction_both_for_occasional_alarm));
-                } else {
-                    mAlarmButton.setContentDescription(getString(R.string.description_direction_both));
-                }
+                mAlarmButton.setContentDescription(getString(isOccasionalAlarmDeletedAfterUse()
+                        ? R.string.description_direction_both_for_occasional_alarm
+                        : R.string.description_direction_both)
+                );
             }
 
-            mSnoozeActionText.setText(mAlarmInstance.mSnoozeDuration == ALARM_SNOOZE_DURATION_DISABLED
-                    ? getString(R.string.button_action_dismiss) : getString(R.string.button_action_snooze));
+            if (mAlarmInstance.mSnoozeDuration == ALARM_SNOOZE_DURATION_DISABLED) {
+                mSnoozeActionText.setText(getString(isOccasionalAlarmDeletedAfterUse()
+                        ? R.string.delete
+                        : R.string.button_action_dismiss)
+                );
+            } else {
+                mSnoozeActionText.setText(getString(R.string.button_action_snooze));
+            }
             mSnoozeActionText.setTextColor(snoozeTitleColor);
 
+            mDismissActionText.setText(getString(isOccasionalAlarmDeletedAfterUse()
+                    ? R.string.delete
+                    : R.string.button_action_dismiss)
+            );
             mDismissActionText.setTextColor(dismissTitleColor);
 
             mPillView.setFillColor(ColorUtils.setAlphaComponent(alarmButtonColor, 128));
@@ -401,25 +461,28 @@ public class AlarmActivity extends AppCompatActivity implements View.OnClickList
             mDismissButton.setBackgroundColor(SettingsDAO.getDismissButtonColor(mPrefs, this));
 
             if (mAlarmInstance.mSnoozeDuration == ALARM_SNOOZE_DURATION_DISABLED) {
-                mSnoozeButton.setText(getString(R.string.button_action_dismiss));
+                mSnoozeButton.setText(getString(isOccasionalAlarmDeletedAfterUse()
+                        ? R.string.delete
+                        : R.string.button_action_dismiss)
+                );
 
-                if (isOccasionalAlarmDeletedAfterUse()) {
-                    mSnoozeButton.setContentDescription(getString(
-                            R.string.description_dismiss_button_for_occasional_alarm));
-                } else {
-                    mSnoozeButton.setContentDescription(getString(
-                                R.string.description_dismiss_button));
-                }
+                mSnoozeButton.setContentDescription(getString(isOccasionalAlarmDeletedAfterUse()
+                        ? R.string.description_dismiss_button_for_occasional_alarm
+                        : R.string.description_dismiss_button)
+                );
             } else {
                 mSnoozeButton.setText(getString(R.string.button_action_snooze));
                 mSnoozeButton.setContentDescription(getString(R.string.description_snooze_button));
             }
 
-            if (isOccasionalAlarmDeletedAfterUse()) {
-                mDismissButton.setContentDescription(getString(R.string.description_dismiss_button_for_occasional_alarm));
-            } else {
-                mDismissButton.setContentDescription(getString(R.string.description_dismiss_button));
-            }
+            mDismissButton.setText(getString(isOccasionalAlarmDeletedAfterUse()
+                    ? R.string.delete
+                    : R.string.button_action_dismiss)
+            );
+            mDismissButton.setContentDescription(getString(isOccasionalAlarmDeletedAfterUse()
+                    ? R.string.description_dismiss_button_for_occasional_alarm
+                    : R.string.description_dismiss_button)
+            );
 
             // Allow text scrolling (all other attributes are indicated in the "alarm_activity.xml" file)
             mSnoozeButton.setSelected(true);
@@ -833,12 +896,45 @@ public class AlarmActivity extends AppCompatActivity implements View.OnClickList
         final Drawable iconRingtone = silent
                 ? AppCompatResources.getDrawable(this, R.drawable.ic_ringtone_silent)
                 : AppCompatResources.getDrawable(this, R.drawable.ic_music_note);
+        int iconRingtoneSize = ThemeUtils.convertDpToPixels(24, this);
         final int ringtoneTitleColor = SettingsDAO.getRingtoneTitleColor(mPrefs);
 
         if (iconRingtone != null) {
-            iconRingtone.setTint(ringtoneTitleColor);
+            if (mIsTextShadowDisplayed) {
+                // Convert the drawable to a bitmap
+                Bitmap iconBitmap = Bitmap.createBitmap(iconRingtoneSize, iconRingtoneSize, Bitmap.Config.ARGB_8888);
+                Canvas iconCanvas = new Canvas(iconBitmap);
+                iconRingtone.setBounds(0, 0, iconRingtoneSize, iconRingtoneSize);
+                iconRingtone.draw(iconCanvas);
+
+                // Create the alpha mask for the shadow
+                Bitmap shadowBitmap = iconBitmap.extractAlpha();
+                Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                shadowPaint.setColor(mShadowColor);
+                shadowPaint.setMaskFilter(new BlurMaskFilter(mShadowRadius * 1.5f, BlurMaskFilter.Blur.NORMAL));
+
+                // Create the final bitmap with space for the shadow
+                int finalWidth = iconRingtoneSize + mShadowOffset;
+                int finalHeight = iconRingtoneSize + mShadowOffset;
+                Bitmap finalBitmap = Bitmap.createBitmap(finalWidth, finalHeight, Bitmap.Config.ARGB_8888);
+                Canvas finalCanvas = new Canvas(finalBitmap);
+
+                // Draw the blurred shadow with an offset
+                finalCanvas.drawBitmap(shadowBitmap, mShadowOffset, mShadowOffset, shadowPaint);
+
+                // Draw the normal icon on top
+                finalCanvas.drawBitmap(iconBitmap, 0, 0, null);
+
+                // Apply the result to the ImageView
+                mRingtoneIcon.setImageBitmap(finalBitmap);
+
+                mRingtoneTitle.setShadowLayer(mShadowRadius, mShadowOffset, mShadowOffset, mShadowColor);
+            } else {
+                iconRingtone.setTint(ringtoneTitleColor);
+                mRingtoneIcon.setImageDrawable(iconRingtone);
+            }
         }
-        mRingtoneIcon.setImageDrawable(iconRingtone);
+
         mRingtoneTitle.setText(title);
         mRingtoneTitle.setTextColor(ringtoneTitleColor);
         // Allow text scrolling (all other attributes are indicated in the "alarm_activity.xml" file)

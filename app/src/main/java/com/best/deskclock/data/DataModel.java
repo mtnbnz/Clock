@@ -265,6 +265,15 @@ public final class DataModel {
     }
 
     /**
+     * Updates the order of selected cities and persists it to SharedPreferences.
+     * @param newOrder the new list of selected cities, in the desired order
+     */
+    public void updateSelectedCitiesOrder(List<City> newOrder) {
+        enforceMainLooper();
+        mCityModel.updateSelectedCitiesOrder(newOrder);
+    }
+
+    /**
      * @return a comparator used to locate index positions
      */
     public Comparator<City> getCityIndexComparator() {
@@ -500,14 +509,6 @@ public final class DataModel {
     public Uri getDefaultTimerRingtoneUri() {
         enforceMainLooper();
         return mTimerModel.getDefaultTimerRingtoneUri();
-    }
-
-    /**
-     * @return {@code true} iff the ringtone to play for all timers is the silent ringtone
-     */
-    public boolean isTimerRingtoneSilent() {
-        enforceMainLooper();
-        return mTimerModel.isTimerRingtoneSilent();
     }
 
     /**

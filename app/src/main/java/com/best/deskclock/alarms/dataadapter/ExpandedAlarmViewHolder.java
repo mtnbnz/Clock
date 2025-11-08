@@ -10,11 +10,10 @@ import static android.view.View.GONE;
 import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 
-import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.settings.PreferencesDefaultValues.ALARM_SNOOZE_DURATION_DISABLED;
-import static com.best.deskclock.settings.PreferencesDefaultValues.ALARM_TIMEOUT_END_OF_RINGTONE;
-import static com.best.deskclock.settings.PreferencesDefaultValues.ALARM_TIMEOUT_NEVER;
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_ALARM_VOLUME_CRESCENDO_DURATION;
+import static com.best.deskclock.settings.PreferencesDefaultValues.TIMEOUT_END_OF_RINGTONE;
+import static com.best.deskclock.settings.PreferencesDefaultValues.TIMEOUT_NEVER;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -22,12 +21,10 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
-import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -50,14 +47,12 @@ import com.best.deskclock.provider.Alarm;
 import com.best.deskclock.uidata.UiDataModel;
 import com.best.deskclock.utils.AlarmUtils;
 import com.best.deskclock.utils.AnimatorUtils;
+import com.best.deskclock.utils.DeviceUtils;
 import com.best.deskclock.utils.RingtoneUtils;
-import com.best.deskclock.utils.Utils;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.color.MaterialColors;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
@@ -67,12 +62,10 @@ import java.util.Locale;
 public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
     public static final int VIEW_TYPE = R.layout.alarm_time_expanded;
 
-    private final SharedPreferences mPrefs;
     private final ImageView editLabelIcon;
     private final TextView editLabel;
     private final LinearLayout repeatDays;
     private final CompoundButton[] dayButtons = new CompoundButton[7];
-    private final View emptyView;
     private final TextView scheduleAlarm;
     private final TextView selectedDate;
     private final ImageView addDate;
@@ -85,6 +78,8 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
     private final TextView autoSilenceDurationValue;
     private final TextView snoozeDurationTitle;
     private final TextView snoozeDurationValue;
+    private final TextView missedAlarmRepeatLimitTitle;
+    private final TextView missedAlarmRepeatLimitValue;
     private final TextView crescendoDurationTitle;
     private final TextView crescendoDurationValue;
     private final TextView alarmVolumeTitle;
@@ -99,14 +94,12 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
         super(itemView);
 
         final Context context = itemView.getContext();
-        mPrefs = getDefaultSharedPreferences(context);
         mHasVibrator = hasVibrator;
         mHasFlash = hasFlash;
 
         editLabelIcon = itemView.findViewById(R.id.edit_label_icon);
         editLabel = itemView.findViewById(R.id.edit_label);
         repeatDays = itemView.findViewById(R.id.repeat_days);
-        emptyView = itemView.findViewById(R.id.empty_view);
         scheduleAlarm = itemView.findViewById(R.id.schedule_alarm);
         selectedDate = itemView.findViewById(R.id.selected_date);
         addDate = itemView.findViewById(R.id.add_date);
@@ -119,6 +112,8 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
         autoSilenceDurationValue = itemView.findViewById(R.id.auto_silence_duration_value);
         snoozeDurationTitle = itemView.findViewById(R.id.snooze_duration_title);
         snoozeDurationValue = itemView.findViewById(R.id.snooze_duration_value);
+        missedAlarmRepeatLimitTitle = itemView.findViewById(R.id.missed_alarm_repeat_limit_title);
+        missedAlarmRepeatLimitValue = itemView.findViewById(R.id.missed_alarm_repeat_limit_value);
         crescendoDurationTitle = itemView.findViewById(R.id.crescendo_duration_title);
         crescendoDurationValue = itemView.findViewById(R.id.crescendo_duration_value);
         alarmVolumeTitle = itemView.findViewById(R.id.alarm_volume_title);
@@ -216,6 +211,14 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
         snoozeDurationValue.setOnClickListener(v ->
                 getAlarmTimeClickHandler().setSnoozeDuration(getItemHolder().item));
 
+        // Missed alarm repeat limit handler
+        missedAlarmRepeatLimitTitle.setOnClickListener(v ->
+                getAlarmTimeClickHandler().setMissedAlarmRepeatLimit(getItemHolder().item));
+
+        // Missed alarm repeat limit handler
+        missedAlarmRepeatLimitValue.setOnClickListener(v ->
+                getAlarmTimeClickHandler().setMissedAlarmRepeatLimit(getItemHolder().item));
+
         // Crescendo duration handler
         crescendoDurationTitle.setOnClickListener(v ->
                 getAlarmTimeClickHandler().setCrescendoDuration(getItemHolder().item));
@@ -255,7 +258,6 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
         final Context context = itemView.getContext();
         bindEditLabel(context, alarm);
         bindDaysOfWeekButtons(alarm, context);
-        bindScheduleAlarm(alarm);
         bindSelectedDate(alarm);
         bindRingtone(context, alarm);
         bindVibrator(alarm);
@@ -264,6 +266,7 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
         bindEditLabelAnnotations(alarm);
         bindAutoSilenceValue(context, alarm);
         bindSnoozeValue(context, alarm);
+        bindMissedAlarmRepeatLimit(context, alarm);
         bindCrescendoValue(context, alarm);
         bindAlarmVolume(context, alarm);
 
@@ -290,6 +293,8 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
         autoSilenceDurationValue.setAlpha(1f);
         snoozeDurationTitle.setAlpha(1f);
         snoozeDurationValue.setAlpha(1f);
+        missedAlarmRepeatLimitTitle.setAlpha(1f);
+        missedAlarmRepeatLimitValue.setAlpha(1f);
         crescendoDurationTitle.setAlpha(1f);
         crescendoDurationValue.setAlpha(1f);
         alarmVolumeTitle.setAlpha(1f);
@@ -313,61 +318,112 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
     }
 
     private void bindAutoSilenceValue(Context context, Alarm alarm) {
-        int autoSilenceDuration = alarm.autoSilenceDuration;
+        if (SettingsDAO.isPerAlarmAutoSilenceEnabled(mPrefs)) {
+            autoSilenceDurationTitle.setVisibility(VISIBLE);
+            autoSilenceDurationValue.setVisibility(VISIBLE);
 
-        if (autoSilenceDuration == ALARM_TIMEOUT_NEVER) {
-            autoSilenceDurationValue.setText(context.getString(R.string.auto_silence_never));
-        } else if (autoSilenceDuration == ALARM_TIMEOUT_END_OF_RINGTONE) {
-            autoSilenceDurationValue.setText(context.getString(R.string.auto_silence_end_of_ringtone));
+            int autoSilenceDuration = alarm.autoSilenceDuration;
+
+            if (autoSilenceDuration == TIMEOUT_NEVER) {
+                autoSilenceDurationValue.setText(context.getString(R.string.label_never));
+            } else if (autoSilenceDuration == TIMEOUT_END_OF_RINGTONE) {
+                autoSilenceDurationValue.setText(context.getString(R.string.auto_silence_end_of_ringtone));
+            } else {
+                autoSilenceDurationValue.setText(context.getResources().getQuantityString(
+                        R.plurals.minutes_short, autoSilenceDuration, autoSilenceDuration));
+            }
         } else {
-            autoSilenceDurationValue.setText(context.getResources().getQuantityString(
-                    R.plurals.minutes_short, autoSilenceDuration, autoSilenceDuration));
+            autoSilenceDurationTitle.setVisibility(GONE);
+            autoSilenceDurationValue.setVisibility(GONE);
         }
     }
 
     private void bindSnoozeValue(Context context, Alarm alarm) {
-        int snoozeDuration = alarm.snoozeDuration;
+        if (SettingsDAO.isPerAlarmSnoozeDurationEnabled(mPrefs)) {
+            snoozeDurationTitle.setVisibility(VISIBLE);
+            snoozeDurationValue.setVisibility(VISIBLE);
 
-        int h = snoozeDuration / 60;
-        int m = snoozeDuration % 60;
+            int snoozeDuration = alarm.snoozeDuration;
 
-        if (h > 0 && m > 0) {
-            String hoursString = context.getResources().getQuantityString(R.plurals.hours_short, h, h);
-            String minutesString = context.getResources().getQuantityString(R.plurals.minutes_short, m, m);
-            snoozeDurationValue.setText(String.format("%s %s", hoursString, minutesString));
-        } else if (h > 0) {
-            snoozeDurationValue.setText(context.getResources().getQuantityString(R.plurals.hours_short, h, h));
-        } else if (snoozeDuration == ALARM_SNOOZE_DURATION_DISABLED) {
-            snoozeDurationValue.setText(context.getString(R.string.snooze_duration_none));
+            int h = snoozeDuration / 60;
+            int m = snoozeDuration % 60;
+
+            if (h > 0 && m > 0) {
+                String hoursString = context.getResources().getQuantityString(R.plurals.hours_short, h, h);
+                String minutesString = context.getResources().getQuantityString(R.plurals.minutes_short, m, m);
+                snoozeDurationValue.setText(String.format("%s %s", hoursString, minutesString));
+            } else if (h > 0) {
+                snoozeDurationValue.setText(context.getResources().getQuantityString(R.plurals.hours_short, h, h));
+            } else if (snoozeDuration == ALARM_SNOOZE_DURATION_DISABLED) {
+                snoozeDurationValue.setText(context.getString(R.string.snooze_duration_none));
+            } else {
+                snoozeDurationValue.setText(context.getResources().getQuantityString(R.plurals.minutes_short, m, m));
+            }
         } else {
-            snoozeDurationValue.setText(context.getResources().getQuantityString(R.plurals.minutes_short, m, m));
+            snoozeDurationTitle.setVisibility(GONE);
+            snoozeDurationValue.setVisibility(GONE);
+        }
+    }
+
+    private void bindMissedAlarmRepeatLimit(Context context, Alarm alarm) {
+        boolean isDeleteAfterUse = !alarm.daysOfWeek.isRepeating() && alarm.deleteAfterUse;
+        if (SettingsDAO.isPerAlarmMissedRepeatLimitEnabled(mPrefs)
+                && alarm.autoSilenceDuration != TIMEOUT_NEVER
+                && !isDeleteAfterUse) {
+
+            missedAlarmRepeatLimitTitle.setVisibility(VISIBLE);
+            missedAlarmRepeatLimitValue.setVisibility(VISIBLE);
+
+            int missedAlarmRepeatLimit = alarm.missedAlarmRepeatLimit;
+            switch (missedAlarmRepeatLimit) {
+                case 1 ->
+                        missedAlarmRepeatLimitValue.setText(context.getString(R.string.missed_alarm_repeat_limit_1_time));
+                case 3 ->
+                        missedAlarmRepeatLimitValue.setText(context.getString(R.string.missed_alarm_repeat_limit_3_times));
+                case 5 ->
+                        missedAlarmRepeatLimitValue.setText(context.getString(R.string.missed_alarm_repeat_limit_5_times));
+                case 10 ->
+                        missedAlarmRepeatLimitValue.setText(context.getString(R.string.missed_alarm_repeat_limit_10_times));
+                default -> missedAlarmRepeatLimitValue.setText(context.getString(R.string.label_never));
+            }
+        } else {
+            missedAlarmRepeatLimitTitle.setVisibility(GONE);
+            missedAlarmRepeatLimitValue.setVisibility(GONE);
         }
     }
 
     private void bindCrescendoValue(Context context, Alarm alarm) {
-        int crescendoDuration = alarm.crescendoDuration;
+        if (SettingsDAO.isPerAlarmCrescendoDurationEnabled(mPrefs)) {
+            crescendoDurationTitle.setVisibility(VISIBLE);
+            crescendoDurationValue.setVisibility(VISIBLE);
 
-        int m = crescendoDuration / 60;
-        int s = crescendoDuration % 60;
+            int crescendoDuration = alarm.crescendoDuration;
 
-        if (m > 0 && s > 0) {
-            String minutesString = context.getResources().getQuantityString(R.plurals.minutes_short, m, m);
-            String secondsString = s + " " + context.getString(R.string.seconds_label);
-            crescendoDurationValue.setText(String.format("%s %s", minutesString, secondsString));
-        } else if (m > 0) {
-            crescendoDurationValue.setText(context.getResources().getQuantityString(R.plurals.minutes_short, m, m));
-        } else if (crescendoDuration == DEFAULT_ALARM_VOLUME_CRESCENDO_DURATION) {
-            crescendoDurationValue.setText(context.getString(R.string.label_off));
+            int m = crescendoDuration / 60;
+            int s = crescendoDuration % 60;
+
+            if (m > 0 && s > 0) {
+                String minutesString = context.getResources().getQuantityString(R.plurals.minutes_short, m, m);
+                String secondsString = s + " " + context.getString(R.string.seconds_label);
+                crescendoDurationValue.setText(String.format("%s %s", minutesString, secondsString));
+            } else if (m > 0) {
+                crescendoDurationValue.setText(context.getResources().getQuantityString(R.plurals.minutes_short, m, m));
+            } else if (crescendoDuration == DEFAULT_ALARM_VOLUME_CRESCENDO_DURATION) {
+                crescendoDurationValue.setText(context.getString(R.string.label_off));
+            } else {
+                String secondsString = s + " " + context.getString(R.string.seconds_label);
+                crescendoDurationValue.setText(secondsString);
+            }
         } else {
-            String secondsString = s + " " + context.getString(R.string.seconds_label);
-            crescendoDurationValue.setText(secondsString);
+            crescendoDurationTitle.setVisibility(GONE);
+            crescendoDurationValue.setVisibility(GONE);
         }
     }
 
     private void bindAlarmVolume(Context context, Alarm alarm) {
         final AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         final int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM);
-        final int currentVolume = alarm.alarmVolume;
+        final int currentVolume = Math.min(alarm.alarmVolume, maxVolume);
 
         if (SettingsDAO.isPerAlarmVolumeEnabled(mPrefs)) {
             alarmVolumeTitle.setVisibility(VISIBLE);
@@ -399,68 +455,37 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
                 dayButton.setTextColor(MaterialColors.getColor(
                         context, com.google.android.material.R.attr.colorOnSurfaceInverse, Color.BLACK));
 
-                selectedDate.setVisibility(GONE);
             } else {
                 dayButton.setChecked(false);
                 dayButton.setTextColor(MaterialColors.getColor(
                         context, com.google.android.material.R.attr.colorSurfaceInverse, Color.BLACK));
-
-                selectedDate.setVisibility(VISIBLE);
             }
-        }
-    }
-
-    private void bindScheduleAlarm(Alarm alarm) {
-        if (alarm.daysOfWeek.isRepeating()) {
-            scheduleAlarm.setVisibility(GONE);
-        } else {
-            scheduleAlarm.setVisibility(VISIBLE);
         }
     }
 
     private void bindSelectedDate(Alarm alarm) {
-        int year = alarm.year;
-        int month = alarm.month;
-        int dayOfMonth = alarm.day;
-        Calendar calendar = Calendar.getInstance();
-        boolean isCurrentYear = year == calendar.get(Calendar.YEAR);
-
-        calendar.set(year, month, dayOfMonth);
-
-        String pattern = DateFormat.getBestDateTimePattern(
-                Locale.getDefault(), isCurrentYear ? "MMMMd" : "yyyyMMMMd");
-        SimpleDateFormat dateFormat = new SimpleDateFormat(pattern, Locale.getDefault());
-        String formattedDate = dateFormat.format(calendar.getTime());
-
         if (alarm.daysOfWeek.isRepeating()) {
-            repeatDays.setVisibility(VISIBLE);
-            emptyView.setVisibility(GONE);
-            selectedDate.setVisibility(GONE);
-            addDate.setVisibility(GONE);
-            removeDate.setVisibility(GONE);
-        } else {
-            if (alarm.isSpecifiedDate()) {
-                if (alarm.isDateInThePast()) {
-                    repeatDays.setVisibility(VISIBLE);
-                    emptyView.setVisibility(GONE);
-                    selectedDate.setVisibility(GONE);
-                    addDate.setVisibility(VISIBLE);
-                    removeDate.setVisibility(GONE);
-                } else {
-                    repeatDays.setVisibility(GONE);
-                    emptyView.setVisibility(VISIBLE);
-                    selectedDate.setText(formattedDate);
-                    addDate.setVisibility(GONE);
-                    removeDate.setVisibility(VISIBLE);
-                }
-            } else {
-                repeatDays.setVisibility(VISIBLE);
-                emptyView.setVisibility(GONE);
-                selectedDate.setVisibility(GONE);
-                addDate.setVisibility(VISIBLE);
-                removeDate.setVisibility(GONE);
-            }
+            clearSelectedDate();
+            return;
         }
+
+        if (alarm.isSpecifiedDate()) {
+            if (alarm.isDateInThePast()) {
+                clearSelectedDate();
+            } else {
+                selectedDate.setText(formatAlarmDate(alarm));
+                addDate.setVisibility(GONE);
+                removeDate.setVisibility(VISIBLE);
+            }
+        } else {
+            clearSelectedDate();
+        }
+    }
+
+    private void clearSelectedDate() {
+        selectedDate.setText(null);
+        addDate.setVisibility(VISIBLE);
+        removeDate.setVisibility(GONE);
     }
 
     private void bindRingtone(Context context, Alarm alarm) {
@@ -645,17 +670,23 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
         final Animator snoozeDurationValueAnimation = ObjectAnimator.ofFloat(
                 snoozeDurationValue, View.ALPHA, 0f).setDuration(shortDuration);
 
+        final Animator missedAlarmRepeatLimitTitleAnimation = ObjectAnimator.ofFloat(
+                missedAlarmRepeatLimitTitle, View.ALPHA, 0f).setDuration(shortDuration);
+
+        final Animator missedAlarmRepeatLimitValueAnimation = ObjectAnimator.ofFloat(
+                missedAlarmRepeatLimitValue, View.ALPHA, 0f).setDuration(shortDuration);
+
         final Animator crescendoDurationTitleAnimation = ObjectAnimator.ofFloat(
                 crescendoDurationTitle, View.ALPHA, 0f).setDuration(shortDuration);
+
+        final Animator crescendoDurationValueAnimation = ObjectAnimator.ofFloat(
+                crescendoDurationValue, View.ALPHA, 0f).setDuration(shortDuration);
 
         final Animator alarmVolumeTitleAnimation = ObjectAnimator.ofFloat(
                 alarmVolumeTitle, View.ALPHA, 0f).setDuration(shortDuration);
 
         final Animator alarmVolumeValueAnimation = ObjectAnimator.ofFloat(
                 alarmVolumeValue, View.ALPHA, 0f).setDuration(shortDuration);
-
-        final Animator crescendoDurationValueAnimation = ObjectAnimator.ofFloat(
-                crescendoDurationValue, View.ALPHA, 0f).setDuration(shortDuration);
 
         final Animator dismissAnimation = ObjectAnimator.ofFloat(preemptiveDismissButton,
                 View.ALPHA, 0f).setDuration(shortDuration);
@@ -675,7 +706,11 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
         final boolean vibrateVisible = vibrate.getVisibility() == VISIBLE;
         final boolean flashVisible = flash.getVisibility() == VISIBLE;
         final boolean deleteOccasionalAlarmAfterUseVisible = deleteOccasionalAlarmAfterUse.getVisibility() == VISIBLE;
-        final boolean isAlarmVolumeTitleVisible = alarmVolumeTitle.getVisibility() == VISIBLE;
+        final boolean autoSilenceDurationTitleVisible = autoSilenceDurationTitle.getVisibility() == VISIBLE;
+        final boolean snoozeDurationTitleVisible = snoozeDurationTitle.getVisibility() == VISIBLE;
+        final boolean missedAlarmRepeatLimitTitleVisible = missedAlarmRepeatLimitTitle.getVisibility() == VISIBLE;
+        final boolean crescendoDurationTitleVisible = crescendoDurationTitle.getVisibility() == VISIBLE;
+        final boolean alarmVolumeTitleVisible = alarmVolumeTitle.getVisibility() == VISIBLE;
         final boolean preemptiveDismissButtonVisible = preemptiveDismissButton.getVisibility() == VISIBLE;
 
         editLabelIconAnimation.setStartDelay(startDelay);
@@ -691,23 +726,35 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
             dismissAnimation.setStartDelay(startDelay);
         }
 
-        if (isAlarmVolumeTitleVisible) {
+        if (alarmVolumeTitleVisible) {
             startDelay += delayIncrement;
             alarmVolumeTitleAnimation.setStartDelay(startDelay);
             alarmVolumeValueAnimation.setStartDelay(startDelay);
         }
 
-        crescendoDurationTitleAnimation.setStartDelay(startDelay);
+        if (crescendoDurationTitleVisible) {
+            startDelay += delayIncrement;
+            crescendoDurationTitleAnimation.setStartDelay(startDelay);
+            crescendoDurationValueAnimation.setStartDelay(startDelay);
+        }
 
-        crescendoDurationValueAnimation.setStartDelay(startDelay);
+        if (missedAlarmRepeatLimitTitleVisible) {
+            startDelay += delayIncrement;
+            missedAlarmRepeatLimitTitleAnimation.setStartDelay(startDelay);
+            missedAlarmRepeatLimitValueAnimation.setStartDelay(startDelay);
+        }
 
-        snoozeDurationTitleAnimation.setStartDelay(startDelay);
+        if (snoozeDurationTitleVisible) {
+            startDelay += delayIncrement;
+            snoozeDurationTitleAnimation.setStartDelay(startDelay);
+            snoozeDurationValueAnimation.setStartDelay(startDelay);
+        }
 
-        snoozeDurationValueAnimation.setStartDelay(startDelay);
-
-        silenceAfterDurationTitleAnimation.setStartDelay(startDelay);
-
-        silenceAfterDurationTitleAnimation.setStartDelay(startDelay);
+        if (autoSilenceDurationTitleVisible) {
+            startDelay += delayIncrement;
+            silenceAfterDurationTitleAnimation.setStartDelay(startDelay);
+            silenceAfterDurationTitleAnimation.setStartDelay(startDelay);
+        }
 
         if (deleteOccasionalAlarmAfterUseVisible) {
             startDelay += delayIncrement;
@@ -745,7 +792,8 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
                 addDateAnimation, removeDateAnimation, snoozeDurationTitleAnimation,
                 snoozeDurationValueAnimation, crescendoDurationTitleAnimation,
                 crescendoDurationValueAnimation, silenceAfterDurationTitleAnimation,
-                silenceAfterDurationValueAnimation, alarmVolumeTitleAnimation,
+                silenceAfterDurationValueAnimation, missedAlarmRepeatLimitTitleAnimation,
+                missedAlarmRepeatLimitValueAnimation, alarmVolumeTitleAnimation,
                 alarmVolumeValueAnimation);
 
         animatorSet.addListener(new AnimatorListenerAdapter() {
@@ -790,6 +838,8 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
         autoSilenceDurationValue.setAlpha(0f);
         snoozeDurationTitle.setAlpha(0f);
         snoozeDurationValue.setAlpha(0f);
+        missedAlarmRepeatLimitTitle.setAlpha(0f);
+        missedAlarmRepeatLimitValue.setAlpha(0f);
         crescendoDurationTitle.setAlpha(0f);
         crescendoDurationValue.setAlpha(0f);
         alarmVolumeTitle.setAlpha(0f);
@@ -855,6 +905,12 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
         final Animator snoozeDurationValueAnimation = ObjectAnimator.ofFloat(
                 snoozeDurationValue, View.ALPHA, 1f).setDuration(longDuration);
 
+        final Animator missedAlarmRepeatLimitTitleAnimation = ObjectAnimator.ofFloat(
+                missedAlarmRepeatLimitTitle, View.ALPHA, 1f).setDuration(longDuration);
+
+        final Animator missedAlarmRepeatLimitValueAnimation = ObjectAnimator.ofFloat(
+                missedAlarmRepeatLimitValue, View.ALPHA, 1f).setDuration(longDuration);
+
         final Animator crescendoDurationTitleAnimation = ObjectAnimator.ofFloat(
                 crescendoDurationTitle, View.ALPHA, 1f).setDuration(longDuration);
 
@@ -889,7 +945,11 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
         final boolean vibrateVisible = vibrate.getVisibility() == VISIBLE;
         final boolean flashVisible = flash.getVisibility() == VISIBLE;
         final boolean deleteOccasionalAlarmAfterUseVisible = deleteOccasionalAlarmAfterUse.getVisibility() == VISIBLE;
-        final boolean isAlarmVolumeTitleVisible = alarmVolumeTitle.getVisibility() == VISIBLE;
+        final boolean autoSilenceDurationTitleVisible = autoSilenceDurationTitle.getVisibility() == VISIBLE;
+        final boolean snoozeDurationTitleVisible = snoozeDurationTitle.getVisibility() == VISIBLE;
+        final boolean missedAlarmRepeatLimitTitleVisible = missedAlarmRepeatLimitTitle.getVisibility() == VISIBLE;
+        final boolean crescendoDurationTitleVisible = crescendoDurationTitle.getVisibility() == VISIBLE;
+        final boolean alarmVolumeTitleVisible = alarmVolumeTitle.getVisibility() == VISIBLE;
         final boolean preemptiveDismissButtonVisible = preemptiveDismissButton.getVisibility() == VISIBLE;
 
         editLabelIconAnimation.setStartDelay(startDelay);
@@ -923,19 +983,31 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
             startDelay += delayIncrement;
         }
 
-        silenceAfterDurationTitleAnimation.setStartDelay(startDelay);
+        if (autoSilenceDurationTitleVisible) {
+            silenceAfterDurationTitleAnimation.setStartDelay(startDelay);
+            silenceAfterDurationValueAnimation.setStartDelay(startDelay);
+            startDelay += delayIncrement;
+        }
 
-        silenceAfterDurationValueAnimation.setStartDelay(startDelay);
+        if (snoozeDurationTitleVisible) {
+            snoozeDurationTitleAnimation.setStartDelay(startDelay);
+            snoozeDurationValueAnimation.setStartDelay(startDelay);
+            startDelay += delayIncrement;
+        }
 
-        snoozeDurationTitleAnimation.setStartDelay(startDelay);
+        if (missedAlarmRepeatLimitTitleVisible) {
+            missedAlarmRepeatLimitTitleAnimation.setStartDelay(startDelay);
+            missedAlarmRepeatLimitValueAnimation.setStartDelay(startDelay);
+            startDelay += delayIncrement;
+        }
 
-        snoozeDurationValueAnimation.setStartDelay(startDelay);
+        if (crescendoDurationTitleVisible) {
+            crescendoDurationTitleAnimation.setStartDelay(startDelay);
+            crescendoDurationValueAnimation.setStartDelay(startDelay);
+            startDelay += delayIncrement;
+        }
 
-        crescendoDurationTitleAnimation.setStartDelay(startDelay);
-
-        crescendoDurationValueAnimation.setStartDelay(startDelay);
-
-        if (isAlarmVolumeTitleVisible) {
+        if (alarmVolumeTitleVisible) {
             alarmVolumeTitleAnimation.setStartDelay(startDelay);
             alarmVolumeValueAnimation.setStartDelay(startDelay);
             startDelay += delayIncrement;
@@ -959,6 +1031,7 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
                 snoozeDurationTitleAnimation, snoozeDurationValueAnimation,
                 crescendoDurationTitleAnimation, crescendoDurationValueAnimation,
                 silenceAfterDurationTitleAnimation, silenceAfterDurationValueAnimation,
+                missedAlarmRepeatLimitTitleAnimation, missedAlarmRepeatLimitValueAnimation,
                 alarmVolumeTitleAnimation, alarmVolumeValueAnimation);
 
         animatorSet.addListener(new AnimatorListenerAdapter() {
@@ -995,6 +1068,38 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
             numberOfItems++;
         }
 
+        if (autoSilenceDurationTitle.getVisibility() == VISIBLE) {
+            numberOfItems++;
+        }
+
+        if (autoSilenceDurationValue.getVisibility() == VISIBLE) {
+            numberOfItems++;
+        }
+
+        if (snoozeDurationTitle.getVisibility() == VISIBLE) {
+            numberOfItems++;
+        }
+
+        if (snoozeDurationValue.getVisibility() == VISIBLE) {
+            numberOfItems++;
+        }
+
+        if (missedAlarmRepeatLimitTitle.getVisibility() == VISIBLE) {
+            numberOfItems++;
+        }
+
+        if (missedAlarmRepeatLimitValue.getVisibility() == VISIBLE) {
+            numberOfItems++;
+        }
+
+        if (crescendoDurationTitle.getVisibility() == VISIBLE) {
+            numberOfItems++;
+        }
+
+        if (crescendoDurationValue.getVisibility() == VISIBLE) {
+            numberOfItems++;
+        }
+
         if (alarmVolumeTitle.getVisibility() == VISIBLE) {
             numberOfItems++;
         }
@@ -1014,7 +1119,7 @@ public final class ExpandedAlarmViewHolder extends AlarmItemViewHolder {
 
         public Factory(Context context) {
             mLayoutInflater = LayoutInflater.from(context);
-            mHasVibrator = Utils.hasVibrator(context);
+            mHasVibrator = DeviceUtils.hasVibrator(context);
             mHasFlash = AlarmUtils.hasBackFlash(context);
         }
 

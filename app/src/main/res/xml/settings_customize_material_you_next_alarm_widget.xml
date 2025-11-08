@@ -9,61 +9,15 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <PreferenceCategory
-        android:title="@string/styles_and_colors_category_title"
+        android:title="@string/style_category_title"
         app:allowDividerAbove="false"
         app:iconSpaceReserved="false"
         tools:layout="@layout/settings_preference_category_layout">
 
         <SwitchPreferenceCompat
-            android:key="key_material_you_next_alarm_widget_default_title_color"
-            android:title="@string/next_alarm_widget_default_title_color"
+            android:key="key_material_you_next_alarm_widget_display_background"
+            android:title="@string/widget_background_title"
             android:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:singleLineTitle="false"
-            tools:layout="@layout/settings_preference_layout" />
-
-        <com.rarepebble.colorpicker.ColorPreference
-            android:key="key_material_you_next_alarm_widget_custom_title_color"
-            android:title="@string/next_alarm_widget_custom_title_color"
-            android:defaultValue="#FFFFFF"
-            app:colorpicker_showAlpha="true"
-            app:colorpicker_selectNoneButtonText="@string/label_default"
-            app:iconSpaceReserved="false"
-            app:singleLineTitle="false"
-            tools:layout="@layout/settings_preference_layout" />
-
-        <SwitchPreferenceCompat
-            android:key="key_material_you_next_alarm_widget_default_alarm_title_color"
-            android:title="@string/next_alarm_widget_default_alarm_title_color"
-            android:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:singleLineTitle="false"
-            tools:layout="@layout/settings_preference_layout" />
-
-        <com.rarepebble.colorpicker.ColorPreference
-            android:key="key_material_you_next_alarm_widget_custom_alarm_title_color"
-            android:title="@string/next_alarm_widget_custom_alarm_title_color"
-            android:defaultValue="#FFFFFF"
-            app:colorpicker_showAlpha="true"
-            app:colorpicker_selectNoneButtonText="@string/label_default"
-            app:iconSpaceReserved="false"
-            app:singleLineTitle="false"
-            tools:layout="@layout/settings_preference_layout" />
-
-        <SwitchPreferenceCompat
-            android:key="key_material_you_next_alarm_widget_default_alarm_color"
-            android:title="@string/widget_next_alarm_default_color_title"
-            android:defaultValue="true"
-            app:iconSpaceReserved="false"
-            app:singleLineTitle="false"
-            tools:layout="@layout/settings_preference_layout" />
-
-        <com.rarepebble.colorpicker.ColorPreference
-            android:key="key_material_you_next_alarm_widget_custom_alarm_color"
-            android:title="@string/widget_next_alarm_custom_color_title"
-            android:defaultValue="#FFFFFF"
-            app:colorpicker_showAlpha="true"
-            app:colorpicker_selectNoneButtonText="@string/label_default"
             app:iconSpaceReserved="false"
             app:singleLineTitle="false"
             tools:layout="@layout/settings_preference_layout" />
@@ -79,6 +33,82 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/colors_category_title"
+        app:allowDividerAbove="false"
+        app:iconSpaceReserved="false"
+        tools:layout="@layout/settings_preference_category_layout">
+
+        <SwitchPreferenceCompat
+            android:key="key_material_you_next_alarm_widget_default_background_color"
+            android:title="@string/background_default_color_title"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false"
+            tools:layout="@layout/settings_preference_layout" />
+
+        <com.rarepebble.colorpicker.ColorPreference
+            android:key="key_material_you_next_alarm_widget_custom_background_color"
+            android:title="@string/background_color_title"
+            android:defaultValue="#70000000"
+            app:colorpicker_selectNoneButtonText="@string/label_default"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false"
+            tools:layout="@layout/settings_preference_layout" />
+
+        <SwitchPreferenceCompat
+            android:key="key_material_you_next_alarm_widget_default_title_color"
+            android:title="@string/next_alarm_no_upcoming_alarm_titles_default_color"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false"
+            tools:layout="@layout/settings_preference_layout" />
+
+        <com.rarepebble.colorpicker.ColorPreference
+            android:key="key_material_you_next_alarm_widget_custom_title_color"
+            android:title="@string/next_alarm_no_upcoming_alarm_titles_color"
+            android:defaultValue="#FFFFFF"
+            app:colorpicker_selectNoneButtonText="@string/label_default"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false"
+            tools:layout="@layout/settings_preference_layout" />
+
+        <SwitchPreferenceCompat
+            android:key="key_material_you_next_alarm_widget_default_alarm_title_color"
+            android:title="@string/alarm_title_default_color"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false"
+            tools:layout="@layout/settings_preference_layout" />
+
+        <com.rarepebble.colorpicker.ColorPreference
+            android:key="key_material_you_next_alarm_widget_custom_alarm_title_color"
+            android:title="@string/alarm_title_color"
+            android:defaultValue="#FFFFFF"
+            app:colorpicker_selectNoneButtonText="@string/label_default"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false"
+            tools:layout="@layout/settings_preference_layout" />
+
+        <SwitchPreferenceCompat
+            android:key="key_material_you_next_alarm_widget_default_alarm_color"
+            android:title="@string/next_alarm_default_color_title"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false"
+            tools:layout="@layout/settings_preference_layout" />
+
+        <com.rarepebble.colorpicker.ColorPreference
+            android:key="key_material_you_next_alarm_widget_custom_alarm_color"
+            android:title="@string/next_alarm_color_title"
+            android:defaultValue="#FFFFFF"
+            app:colorpicker_selectNoneButtonText="@string/label_default"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false"
+            tools:layout="@layout/settings_preference_layout" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/font_category_title"
         app:allowDividerAbove="false"
         app:iconSpaceReserved="false"
@@ -86,7 +116,7 @@
 
         <com.best.deskclock.settings.CustomSeekbarPreference
             android:key="key_material_you_next_alarm_widget_maximum_font_size"
-            android:title="@string/next_alarm_widget_max_font_size_title"
+            android:title="@string/widget_max_font_size_title"
             android:summary="@string/label_default"
             android:defaultValue="70"
             android:max="200"

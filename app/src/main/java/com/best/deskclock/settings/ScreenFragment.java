@@ -8,7 +8,9 @@ package com.best.deskclock.settings;
 
 import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_ABOUT_TITLE;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_ALARM_BLUR_INTENSITY;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_ALARM_DIGITAL_CLOCK_FONT_SIZE;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_ALARM_SHADOW_OFFSET;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_ALARM_TITLE_FONT_SIZE_PREF;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_ALARM_VOLUME_SETTING;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_BLUETOOTH_VOLUME;
@@ -33,6 +35,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.graphics.Insets;
+import androidx.core.view.MenuProvider;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
@@ -45,7 +48,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.best.deskclock.R;
-import com.best.deskclock.controller.ThemeController;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.utils.InsetsUtils;
 import com.best.deskclock.utils.SdkUtils;
@@ -57,6 +59,10 @@ import com.google.android.material.appbar.CollapsingToolbarLayout;
 import java.util.Objects;
 
 public abstract class ScreenFragment extends PreferenceFragmentCompat {
+
+    protected static final int MENU_ABOUT = 1;
+    protected static final int MENU_BUG_REPORT = 2;
+    protected static final int MENU_RESET_SETTINGS = 3;
 
     SharedPreferences mPrefs;
     CoordinatorLayout mCoordinatorLayout;
@@ -87,33 +93,8 @@ public abstract class ScreenFragment extends PreferenceFragmentCompat {
 
         mPrefs = getDefaultSharedPreferences(requireContext());
 
-        setHasOptionsMenu(true);
-
         // To manually manage insets
         WindowCompat.setDecorFitsSystemWindows(requireActivity().getWindow(), false);
-    }
-
-    @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        menu.add(0, Menu.NONE, 0, R.string.about_title)
-                .setIcon(R.drawable.ic_about)
-                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == 0) {
-            Fragment existingFragment =
-                    requireActivity().getSupportFragmentManager().findFragmentByTag(AboutFragment.class.getSimpleName());
-
-            if (existingFragment == null) {
-                animateAndShowFragment(new AboutFragment());
-            }
-
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -132,6 +113,32 @@ public abstract class ScreenFragment extends PreferenceFragmentCompat {
             mRecyclerView.setVerticalScrollBarEnabled(false);
             mLinearLayoutManager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
         }
+
+        requireActivity().addMenuProvider(new MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                menu.clear();
+
+                menu.add(0, MENU_ABOUT, 0, R.string.about_title)
+                        .setIcon(R.drawable.ic_about)
+                        .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+            }
+
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem item) {
+                if (item.getItemId() == MENU_ABOUT) {
+                    Fragment existingFragment =
+                            requireActivity().getSupportFragmentManager()
+                                    .findFragmentByTag(AboutFragment.class.getSimpleName());
+
+                    if (existingFragment == null) {
+                        animateAndShowFragment(new AboutFragment());
+                    }
+                    return true;
+                }
+                return false;
+            }
+        }, getViewLifecycleOwner());
     }
 
     @Override
@@ -184,6 +191,8 @@ public abstract class ScreenFragment extends PreferenceFragmentCompat {
                             || Objects.equals(subPref.getKey(), KEY_SHAKE_INTENSITY)
                             || Objects.equals(subPref.getKey(), KEY_ALARM_DIGITAL_CLOCK_FONT_SIZE)
                             || Objects.equals(subPref.getKey(), KEY_ALARM_TITLE_FONT_SIZE_PREF)
+                            || Objects.equals(subPref.getKey(), KEY_ALARM_SHADOW_OFFSET)
+                            || Objects.equals(subPref.getKey(), KEY_ALARM_BLUR_INTENSITY)
                             || Objects.equals(subPref.getKey(), KEY_TIMER_SHAKE_INTENSITY)
                             || Objects.equals(subPref.getKey(), KEY_DIGITAL_WIDGET_MAXIMUM_CLOCK_FONT_SIZE)
                             || Objects.equals(subPref.getKey(), KEY_MATERIAL_YOU_DIGITAL_WIDGET_MAXIMUM_CLOCK_FONT_SIZE)
@@ -237,7 +246,7 @@ public abstract class ScreenFragment extends PreferenceFragmentCompat {
      * fragment because it does not have a RecyclerView. Therefore, this fragment has its own method.
      */
     private void applyWindowInsets() {
-        InsetsUtils.doOnApplyWindowInsets(mCoordinatorLayout, (v, insets, initialPadding) -> {
+        InsetsUtils.doOnApplyWindowInsets(mCoordinatorLayout, (v, insets) -> {
             // Get the system bar and notch insets
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() |
                     WindowInsetsCompat.Type.displayCutout());
@@ -275,18 +284,4 @@ public abstract class ScreenFragment extends PreferenceFragmentCompat {
                 .commit();
     }
 
-    /**
-     * Recreate the activity while ensuring smooth animation when resetting the fragment view:
-     * scrolling to the top of the list and expanding the AppBarLayout.
-     * <p>
-     * This applies to settings that need to be applied immediately (eg: changing the accent color).
-     */
-    protected void recreateActivity() {
-        ThemeController.setNewSettingWithDelay();
-
-        mRecyclerView.post(() -> {
-            mLinearLayoutManager.scrollToPosition(0);
-            mAppBarLayout.setExpanded(true, true);
-        });
-    }
 }

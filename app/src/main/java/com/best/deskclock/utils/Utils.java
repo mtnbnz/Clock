@@ -11,6 +11,11 @@ import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 
 import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_SYSTEM_LANGUAGE_CODE;
+import static com.best.deskclock.settings.PreferencesDefaultValues.VIBRATION_PATTERN_ESCALATING;
+import static com.best.deskclock.settings.PreferencesDefaultValues.VIBRATION_PATTERN_HEARTBEAT;
+import static com.best.deskclock.settings.PreferencesDefaultValues.VIBRATION_PATTERN_SOFT;
+import static com.best.deskclock.settings.PreferencesDefaultValues.VIBRATION_PATTERN_STRONG;
+import static com.best.deskclock.settings.PreferencesDefaultValues.VIBRATION_PATTERN_TICK_TOCK;
 
 import android.annotation.SuppressLint;
 import android.app.PendingIntent;
@@ -18,20 +23,35 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.os.Build;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.provider.OpenableColumns;
 import android.view.MotionEvent;
 import android.view.View;
+
+import androidx.core.util.Function;
 
 import com.best.deskclock.BuildConfig;
 import com.best.deskclock.R;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.SettingsDAO;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.Normalizer;
 import java.text.NumberFormat;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 public class Utils {
 
@@ -41,11 +61,13 @@ public class Utils {
     public static final String ACTION_LANGUAGE_CODE_CHANGED = "com.best.deskclock.LANGUAGE_CODE_CHANGED";
 
     /**
-     * @return {@code true} if the application is in development mode (debug, eng or userdebug).
-     * {@code false} otherwise.
+     * @return {@code true} if the application is in development mode. {@code false} otherwise.
+     * <br><p>
+     * Note: no need to specify {@code "eng".equals(Build.TYPE) || "userdebug".equals(Build.TYPE)}
+     * because the app is not intended to be deployed in a custom ROM.</p></br>
      */
     public static boolean isDebugConfig() {
-        return BuildConfig.DEBUG || "eng".equals(Build.TYPE) || "userdebug".equals(Build.TYPE);
+        return BuildConfig.DEBUG;
     }
 
     public static void enforceMainLooper() {
@@ -58,14 +80,6 @@ public class Utils {
         if (Looper.getMainLooper() == Looper.myLooper()) {
             throw new IllegalAccessError("May not call from main thread.");
         }
-    }
-
-    /**
-     * @param view the scrollable view to test
-     * @return {@code true} iff the {@code view} content is currently scrolled to the top
-     */
-    public static boolean isScrolledToTop(View view) {
-        return !view.canScrollVertically(-1);
     }
 
     /**
@@ -172,6 +186,19 @@ public class Utils {
     }
 
     /**
+     * Returns a context that points to device-protected storage on Android 7+,
+     * or the regular context on older versions.
+     *
+     * @param context the base context
+     * @return a context suitable for accessing device-protected storage
+     */
+    public static Context getSafeStorageContext(Context context) {
+        return SdkUtils.isAtLeastAndroid7()
+                ? context.createDeviceProtectedStorageContext()
+                : context;
+    }
+
+    /**
      * Apply a custom locale and return a localized context.
      *
      * @param context the context in which the locale is to be applied.
@@ -181,14 +208,6 @@ public class Utils {
         String customLanguageCode = SettingsDAO.getCustomLanguageCode(getDefaultSharedPreferences(context));
         applySpecificLocale(context, customLanguageCode);
         return context.createConfigurationContext(context.getResources().getConfiguration());
-    }
-
-    /**
-     * @return {@code true} if a vibrator is available on the device. {@code false} otherwise.
-     */
-    public static boolean hasVibrator(Context context) {
-        Vibrator vibrator = context.getSystemService(Vibrator.class);
-        return vibrator != null && vibrator.hasVibrator();
     }
 
     /**
@@ -207,6 +226,159 @@ public class Utils {
                 vibrator.vibrate(milliseconds);
             }
         }
+    }
+
+    /**
+     * Returns the vibration pattern associated with the given pattern key.
+     *
+     * @param patternKey the key identifying the vibration pattern
+     * @return a long array representing the vibration pattern durations in milliseconds;
+     *         if the pattern key is unknown, returns a default vibration pattern
+     */
+    public static long[] getVibrationPatternForKey(String patternKey) {
+        return switch (patternKey) {
+            case VIBRATION_PATTERN_SOFT -> new long[]{500, 200, 500};
+            case VIBRATION_PATTERN_STRONG -> new long[]{500, 1000};
+            case VIBRATION_PATTERN_HEARTBEAT -> new long[]{100, 100, 300, 100, 600};
+            case VIBRATION_PATTERN_ESCALATING -> new long[]{500, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
+            case VIBRATION_PATTERN_TICK_TOCK -> new long[]{300, 150, 300, 150};
+            default -> new long[]{500, 500};
+        };
+    }
+
+    /**
+     * Initializes a cache map holding the current values of the given preferences.
+     * <p>
+     * This cache is used to compare old and new values during preference changes,
+     * preventing unnecessary actions if the value has not actually changed.</p>
+     *
+     * @param keys List of preference keys to retrieve and cache.
+     * @param getter Function that returns the value for a given key.
+     * @return A map of preference keys to their current values.
+     */
+    public static Map<String, Object> initCachedValues(List<String> keys, Function<String, Object> getter) {
+        Map<String, Object> cached = new HashMap<>();
+        for (String key : keys) {
+            cached.put(key, getter.apply(key));
+        }
+        return cached;
+    }
+
+    /**
+     * Copies the given file to device-protected storage for Direct Boot compatibility.
+     *
+     * @param context   a context used to resolve storage location
+     * @param sourceUri the URI of the source file to copy
+     * @param title     a title used to generate a safe filename
+     * @return a URI pointing to the copied file in device-protected storage, or null if the copy failed
+     */
+    public static Uri copyFileToDeviceProtectedStorage(Context context, Uri sourceUri, String title) {
+        final Context storageContext = getSafeStorageContext(context);
+
+        long sourceSize = getFileSize(storageContext, sourceUri);
+
+        File[] existingFiles = storageContext.getFilesDir().listFiles();
+        String safeTitle = toSafeFileName(title);
+
+        if (existingFiles != null) {
+            for (File file : existingFiles) {
+                if (file.getName().startsWith(safeTitle)) {
+                    if (file.length() == sourceSize) {
+                        // Already copied
+                        return Uri.fromFile(file);
+                    }
+                }
+            }
+        }
+
+        // Copy if not found
+        String filename = safeTitle + "_" + UUID.randomUUID().toString();
+        File destFile = new File(storageContext.getFilesDir(), filename);
+        try (InputStream inputStream = storageContext.getContentResolver().openInputStream(sourceUri);
+             OutputStream outputStream = new FileOutputStream(destFile)) {
+            if (inputStream != null) {
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                } return Uri.fromFile(destFile);
+            } else {
+                LogUtils.e("InputStream null for URI: " + sourceUri);
+            }
+        } catch (IOException e) {
+            LogUtils.e("Failed to copy ringtone", e);
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets the size of a file for mixed uri formats.
+     *
+     * <p>File pickers usually use {@code content://} but files stored in DeviceProtected storage
+     * use {@code file://}.</p>
+     */
+    public static long getFileSize(Context context, Uri uri) {
+        long size = -1;
+
+        String scheme = uri.getScheme();
+        if ("file".equalsIgnoreCase(scheme)) {
+            File file = new File(Objects.requireNonNull(uri.getPath()));
+            if (file.exists()) {
+                size = file.length();
+            }
+        } else if ("content".equalsIgnoreCase(scheme)) {
+            try (Cursor cursor = context.getContentResolver().query(
+                    uri, new String[]{OpenableColumns.SIZE}, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+                    if (!cursor.isNull(sizeIndex)) {
+                        size = cursor.getLong(sizeIndex);
+                    }
+                }
+            }
+        }
+
+        // As a fallback: read the whole stream
+        if (size < 0) {
+            try (InputStream inputStream = context.getContentResolver().openInputStream(uri)) {
+                if (inputStream != null) {
+                    byte[] buffer = new byte[8192];
+                    int read;
+                    size = 0;
+                    while ((read = inputStream.read(buffer)) != -1) {
+                        size += read;
+                    }
+                }
+            } catch (IOException e) {
+                LogUtils.e("Failed to determine file size of ringtone", e);
+            }
+        }
+
+        return size;
+    }
+
+    /**
+     * Converts a given file title into a "safe" filename that can be stored
+     * in the app's private storage without issues.
+     *
+     * <p>This method performs two main steps:
+     * <ol>
+     *   <li>Normalization of accented characters (e.g., é → e, à → a) to ensure ASCII compatibility.</li>
+     *   <li>Replacement of any character not allowed in filenames (anything other than
+     *       letters, digits, dot, or hyphen) with an underscore '_'.</li>
+     * </ol>
+     *
+     * @param title The file title, possibly containing accents or special characters.
+     * @return A sanitized string that can be safely used as a filename in app storage.
+     */
+    public static String toSafeFileName(String title) {
+        // Normalize accented characters to their base form (é → e, ü → u, etc.)
+        String normalized = Normalizer.normalize(title, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", ""); // Remove diacritical marks
+
+        // Replace any remaining non-alphanumeric character (except dot or hyphen) with an underscore
+        return normalized.replaceAll("[^a-zA-Z0-9.\\-]", "_");
     }
 
     /**

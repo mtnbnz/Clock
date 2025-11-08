@@ -1,10 +1,11 @@
 <!--suppress CheckImageSize -->
-# Clock
+# <img width="24" height="24" alt="image" src="/fastlane/metadata/android/en-US/images/icon.png" /> Clock
 Clock is a customizable and privacy-conscious open-source clock, based on AOSP Clock.
 
 [<img src="/images/badge_github.png" alt="Get it on GitHub" height="80">](https://github.com/BlackyHawky/Clock/releases)
 [<img src="/images/badge_f-droid.png" alt="Get it on F-Droid" height="80">](https://f-droid.org/packages/com.best.deskclock/)
 [<img src="/images/badge_izzy_on_droid.png" alt="Get it on IzzyOnDroid" height="80">](https://apt.izzysoft.de/fdroid/index/apk/com.best.deskclock/)
+[<img src="/images/badge_obtainium.png" alt="Get it on Obtainium" height="80">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/BlackyHawky/Clock/releases)
 [<img src="/images/badge_openApk.png" alt="Get it on OpenApk" height="80">](https://www.openapk.net/clock/com.best.deskclock/)
 
 ## Table of Contents
@@ -23,8 +24,6 @@ Clock is a customizable and privacy-conscious open-source clock, based on AOSP C
 * Set the alarms to a specific date;
 * Flip and shake action to dismiss/postpone alarm;
 * Turn off/postpone the alarm with the power button or volume buttons;
-* For some Snapdragon devices only, the alarm is triggered when they are switched off;
-  * Unfortunately, this feature may not work on some devices despite the presence of the _“com.qualcomm.qti.poweroffalarm”_ system app. See the discussion [here](https://github.com/BlackyHawky/Clock/issues/88).
 * Swipe to delete an alarm;
 * Duplicate alarms;
 * Customizable alarm title;
@@ -45,11 +44,18 @@ Clock is a customizable and privacy-conscious open-source clock, based on AOSP C
 * Backup and restore application data (except custom ringtones);
 * Material design;
 * Dynamic colors for Android 12+;
+* Support for [Direct Boot](https://developer.android.com/privacy-and-security/direct-boot) (the app can run and trigger alarms even before the device is unlocked after reboot);
+  * Unfortunately, this feature may not work on some devices. See the discussion [here](https://github.com/BlackyHawky/Clock/issues/396).
+* For some Snapdragon devices only, the alarm is triggered when they are switched off;
+  * Unfortunately, this feature may not work on some devices despite the presence of the _“com.qualcomm.qti.poweroffalarm”_ system app. See the discussion [here](https://github.com/BlackyHawky/Clock/issues/88).
 * Support for [Reproducible Builds](https://reproducible-builds.org/). See the discussion [here](https://github.com/BlackyHawky/Clock/issues/140).
 
 ## Common Issues
 
-Issues may occur on specific devices due to the limited number of devices to test the application.
+* Issues may occur on specific devices due to the limited number of devices to test the application.
+* Some devices running Android 14+ with HyperOS may have the _"Full screen notification"_ permission revoked. Possible solution [here](https://github.com/BlackyHawky/Clock/discussions/303#discussioncomment-13407709).
+* Some MIUI users may experience issues due to MIUI’s aggressive battery optimizations.
+  * Please make sure that battery optimizations are disabled for the app before opening an issue.
 
 ⚠ _<b>As I'm not an expert developer, some problems may unfortunately not be solved without help.</b>_ ⚠
 
@@ -135,6 +141,8 @@ Since the app is based on Apache 2.0 licensed AOSP Clock, an [Apache 2.0](LICENS
 </details>
 
 # Credits
+- Icon inspired by [LineageOS](https://github.com/LineageOS/android_packages_apps_DeskClock) and modified by [BlackyHawky](https://github.com/BlackyHawky)
 - [qw123wh](https://github.com/qw123wh)
 - [crDroid Android](https://github.com/crdroidandroid/android_packages_apps_DeskClock)
 - [LineageOS](https://github.com/LineageOS/android_packages_apps_DeskClock)
+- [Contributors](https://github.com/BlackyHawky/Clock/graphs/contributors)

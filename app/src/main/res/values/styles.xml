@@ -9,8 +9,7 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <!-- The navigation bar color is also set programmatically in the ThemeController.java file -->
-        <item name="android:navigationBarColor">?android:attr/colorBackground</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
 
         <item name="colorAccent">@color/md_theme_primary</item>
@@ -84,7 +83,7 @@
         <item name="shapeAppearance">@style/ShapeAppearanceOverlay.MaterialComponents.FloatingActionButton</item>
         <item name="backgroundTint">?attr/colorSurface</item>
         <item name="android:textColor">?android:attr/textColorPrimary</item>
-        <item name="android:layout_margin">4dp</item>
+        <item name="android:layout_margin">2dp</item>
         <item name="android:padding">5dp</item>
         <item name="android:insetLeft">0dp</item>
         <item name="android:insetTop">0dp</item>
@@ -94,6 +93,7 @@
         <item name="autoSizeTextType">uniform</item>
         <item name="autoSizeMaxTextSize">36sp</item>
         <item name="autoSizeStepGranularity">1sp</item>
+        <item name="android:stateListAnimator">@null</item>
     </style>
 
     <style name="CollapsingToolbarTitle.Collapsed" parent="@style/TextAppearance.Material3.ActionBar.Title">
@@ -108,8 +108,11 @@
         <item name="backgroundTint">?attr/colorAccent</item>
         <!-- Remove animation when floating action button is pressed -->
         <item name="pressedTranslationZ">0dp</item>
-        <!-- color used by the icon -->
+        <!-- Color used by the icon -->
         <item name="tint">@color/md_theme_inverseOnSurface</item>
+        <!-- Remove shadow -->
+        <item name="elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
     </style>
 
     <style name="SnackBarStyle" parent="@style/Widget.MaterialComponents.Snackbar">

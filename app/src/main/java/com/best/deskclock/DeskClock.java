@@ -10,12 +10,32 @@ import static android.text.format.DateUtils.SECOND_IN_MILLIS;
 import static androidx.viewpager.widget.ViewPager.SCROLL_STATE_DRAGGING;
 import static androidx.viewpager.widget.ViewPager.SCROLL_STATE_IDLE;
 import static androidx.viewpager.widget.ViewPager.SCROLL_STATE_SETTLING;
-import static com.best.alarmclock.WidgetUtils.ACTION_NEXT_ALARM_LABEL_CHANGED;
 import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.settings.PermissionsManagementActivity.PermissionsManagementFragment.areEssentialPermissionsNotGranted;
 import static com.best.deskclock.settings.PreferencesDefaultValues.AMOLED_DARK_MODE;
 import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_TAB_TITLE_VISIBILITY;
 import static com.best.deskclock.settings.PreferencesDefaultValues.TAB_TITLE_VISIBILITY_NEVER;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_AUTO_HOME_CLOCK;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_CLOCK_DIAL;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_CLOCK_DIAL_MATERIAL;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_CLOCK_SECOND_HAND;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_CLOCK_STYLE;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_DISPLAY_CLOCK_SECONDS;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_ENABLE_CITY_NOTE;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_ENABLE_PER_ALARM_VOLUME;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_ESSENTIAL_PERMISSIONS_GRANTED;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_HOME_TIME_ZONE;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_KEEP_SCREEN_ON;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_SORT_CITIES;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_SORT_TIMER;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_SW_VOLUME_DOWN_ACTION;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_SW_VOLUME_DOWN_ACTION_AFTER_LONG_PRESS;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_SW_VOLUME_UP_ACTION;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_SW_VOLUME_UP_ACTION_AFTER_LONG_PRESS;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_TAB_INDICATOR;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_TAB_TITLE_VISIBILITY;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_TAB_TO_DISPLAY;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_WEEK_START;
 import static com.best.deskclock.utils.AnimatorUtils.getScaleAnimator;
 
 import android.animation.Animator;
@@ -35,10 +55,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.StringRes;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
@@ -49,7 +66,13 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 import androidx.viewpager.widget.ViewPager.OnPageChangeListener;
 
-import com.best.deskclock.alarms.AlarmVolumeDialogFragment;
+import com.best.deskclock.AlarmSnoozeDurationDialogFragment.SnoozeDurationDialogHandler;
+import com.best.deskclock.AutoSilenceDurationDialogFragment.AutoSilenceDurationDialogHandler;
+import com.best.deskclock.LabelDialogFragment.AlarmLabelDialogHandler;
+import com.best.deskclock.LabelDialogFragment.CityNoteDialogHandler;
+import com.best.deskclock.VolumeCrescendoDurationDialogFragment.VolumeCrescendoDurationDialogHandler;
+import com.best.deskclock.alarms.AlarmMissedRepeatLimitDialogFragment.MissedAlarmRepeatLimitDialogHandler;
+import com.best.deskclock.alarms.AlarmVolumeDialogFragment.VolumeValueDialogHandler;
 import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.DataModel.SilentSetting;
 import com.best.deskclock.data.OnSilentSettingsListener;
@@ -60,30 +83,33 @@ import com.best.deskclock.settings.PermissionsManagementActivity;
 import com.best.deskclock.settings.SettingsActivity;
 import com.best.deskclock.stopwatch.StopwatchService;
 import com.best.deskclock.timer.TimerService;
+import com.best.deskclock.uicomponents.toast.SnackbarManager;
 import com.best.deskclock.uidata.TabListener;
 import com.best.deskclock.uidata.UiDataModel;
 import com.best.deskclock.utils.InsetsUtils;
 import com.best.deskclock.utils.ThemeUtils;
-import com.best.deskclock.widget.toast.SnackbarManager;
 
+import com.best.deskclock.utils.Utils;
+import com.best.deskclock.utils.WidgetUtils;
+import com.best.deskclock.widgets.materialyouwidgets.MaterialYouNextAlarmAppWidgetProvider;
+import com.best.deskclock.widgets.standardwidgets.NextAlarmAppWidgetProvider;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.navigation.NavigationBarView;
 import com.google.android.material.snackbar.Snackbar;
 
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+
 /**
  * The main activity of the application which displays 4 different tabs contains alarms, world
  * clocks, timers and stopwatch.
  */
-public class DeskClock extends AppCompatActivity
-        implements FabContainer, LabelDialogFragment.AlarmLabelDialogHandler,
-        AutoSilenceDurationDialogFragment.AutoSilenceDurationDialogHandler,
-        AlarmSnoozeDurationDialogFragment.SnoozeDurationDialogHandler,
-        VolumeCrescendoDurationDialogFragment.VolumeCrescendoDurationDialogHandler,
-        AlarmVolumeDialogFragment.VolumeValueDialogHandler {
-
-    public static final int REQUEST_CHANGE_SETTINGS = 10;
-    public static final int REQUEST_CHANGE_PERMISSIONS = 20;
+public class DeskClock extends BaseActivity
+        implements FabContainer, AlarmLabelDialogHandler, AutoSilenceDurationDialogHandler,
+        SnoozeDurationDialogHandler, MissedAlarmRepeatLimitDialogHandler,
+        VolumeCrescendoDurationDialogHandler, VolumeValueDialogHandler, CityNoteDialogHandler {
 
     SharedPreferences mPrefs;
 
@@ -180,29 +206,42 @@ public class DeskClock extends AppCompatActivity
     /**
      * {@code true} when a settings change necessitates recreating this activity.
      */
-    private boolean mRecreateActivity;
+    private boolean mShouldRecreate = false;
 
     /**
-     * Callback for getting the result from the Settings activity.
+     * List of supported preference keys used to monitor UI and behavior changes within
+     * {@link #registerClockListener()}.
+     *
+     * <p>This ensures that only relevant keys are tracked to optimize performance and avoid
+     * unnecessary activity recreation.</p>
      */
-    private final ActivityResultLauncher<Intent> getSettingsActivity = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(), (result) -> {
-                if (result.getResultCode() != REQUEST_CHANGE_SETTINGS) {
-                    return;
-                }
-                mRecreateActivity = true;
-            });
+    private static final List<String> SUPPORTED_PREF_KEYS = List.of(
+            // Interface
+            KEY_TAB_TITLE_VISIBILITY, KEY_TAB_INDICATOR, KEY_TAB_TO_DISPLAY, KEY_KEEP_SCREEN_ON,
+            // Clock
+            KEY_CLOCK_STYLE, KEY_CLOCK_DIAL, KEY_CLOCK_DIAL_MATERIAL, KEY_DISPLAY_CLOCK_SECONDS,
+            KEY_CLOCK_SECOND_HAND, KEY_SORT_CITIES, KEY_ENABLE_CITY_NOTE, KEY_AUTO_HOME_CLOCK,
+            KEY_HOME_TIME_ZONE,
+            // Alarm
+            KEY_ENABLE_PER_ALARM_VOLUME, KEY_WEEK_START,
+            // Timer
+            KEY_SORT_TIMER,
+            // Stopwatch
+            KEY_SW_VOLUME_UP_ACTION,
+            KEY_SW_VOLUME_UP_ACTION_AFTER_LONG_PRESS,
+            KEY_SW_VOLUME_DOWN_ACTION,
+            KEY_SW_VOLUME_DOWN_ACTION_AFTER_LONG_PRESS,
+            // Permission
+            KEY_ESSENTIAL_PERMISSIONS_GRANTED
+    );
 
     /**
-     * Callback for getting the result from the Permission Management activity.
+     * Listener registered to observe changes in relevant app settings.
+     * Used to trigger activity recreation only when relevant values actually change.
      */
-    private final ActivityResultLauncher<Intent> getPermissionManagementActivity = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(), (result) -> {
-                if (result.getResultCode() != REQUEST_CHANGE_PERMISSIONS) {
-                    return;
-                }
-                mRecreateActivity = true;
-            });
+    private SharedPreferences.OnSharedPreferenceChangeListener mPrefListener;
+
+    private UiDataModel.Tab mPreviousTab = UiDataModel.getUiDataModel().getSelectedTab();
 
     @Override
     public void onNewIntent(Intent newIntent) {
@@ -229,6 +268,8 @@ public class DeskClock extends AppCompatActivity
 
         setContentView(R.layout.desk_clock);
 
+        registerClockListener();
+
         mDeskClockRootView = findViewById(R.id.desk_clock_root_view);
 
         mSnackbarAnchor = findViewById(R.id.content);
@@ -247,7 +288,11 @@ public class DeskClock extends AppCompatActivity
         mFab.getLayoutParams().height = ThemeUtils.convertDpToPixels(fabSize, this);
         mFab.getLayoutParams().width = ThemeUtils.convertDpToPixels(fabSize, this);
         mFab.setScaleType(ImageView.ScaleType.CENTER);
-        mFab.setOnClickListener(view -> getSelectedDeskClockFragment().onFabClick(mFab));
+        mFab.setOnClickListener(view -> getSelectedDeskClockFragment().onFabClick());
+        mFab.setOnLongClickListener(v -> {
+            getSelectedDeskClockFragment().onFabLongClick(mFab);
+            return true;
+        });
 
         mLeftButton = findViewById(R.id.left_button);
         mLeftButton.getLayoutParams().height = ThemeUtils.convertDpToPixels(leftOrRightButtonSize, this);
@@ -325,7 +370,7 @@ public class DeskClock extends AppCompatActivity
 
         // Mirror changes made to the selected tab into UiDataModel.
         final int primaryColor = MaterialColors.getColor(
-                this, com.google.android.material.R.attr.colorPrimary, Color.BLACK);
+                this, androidx.appcompat.R.attr.colorPrimary, Color.BLACK);
         final int surfaceColor = MaterialColors.getColor(
                 this, com.google.android.material.R.attr.colorSurface, Color.BLACK);
         final int onBackgroundColor = MaterialColors.getColor(
@@ -382,25 +427,19 @@ public class DeskClock extends AppCompatActivity
     protected void onResume() {
         super.onResume();
 
+        if (mShouldRecreate) {
+            mShouldRecreate = false;
+
+            recreate();
+            return;
+        }
+
         showTabFromNotifications();
 
         // ViewPager does not save state; this honors the selected tab in the user interface.
         updateCurrentTab();
 
         updateKeepScreenOn(UiDataModel.getUiDataModel().getSelectedTab());
-    }
-
-    @Override
-    protected void onPostResume() {
-        super.onPostResume();
-
-        if (mRecreateActivity) {
-            mRecreateActivity = false;
-
-            // A runnable must be posted here or the new DeskClock activity will be recreated in a
-            // paused state, even though it is the foreground activity.
-            mFragmentTabPager.post(this::recreate);
-        }
     }
 
     @Override
@@ -415,6 +454,7 @@ public class DeskClock extends AppCompatActivity
 
     @Override
     protected void onDestroy() {
+        unregisterClockListener();
         UiDataModel.getUiDataModel().removeTabListener(mTabChangeWatcher);
         super.onDestroy();
     }
@@ -439,15 +479,14 @@ public class DeskClock extends AppCompatActivity
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == 0) {
             final Intent settingIntent = new Intent(this, SettingsActivity.class);
-            getSettingsActivity.launch(settingIntent);
+            startActivity(settingIntent);
+            return true;
+        } else if (item.getItemId() == 1) {
+            final Intent permissionManagementIntent = new Intent(this, PermissionsManagementActivity.class);
+            startActivity(permissionManagementIntent);
             return true;
         }
 
-        if (item.getItemId() == 1) {
-            final Intent permissionManagementIntent = new Intent(this, PermissionsManagementActivity.class);
-            getPermissionManagementActivity.launch(permissionManagementIntent);
-            return true;
-        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -460,7 +499,8 @@ public class DeskClock extends AppCompatActivity
         if (frag instanceof AlarmClockFragment) {
             ((AlarmClockFragment) frag).setLabel(alarm, label);
             // Update the alarm title in the “Next alarm” widget
-            sendBroadcast(new Intent(ACTION_NEXT_ALARM_LABEL_CHANGED));
+            WidgetUtils.updateWidget(this, NextAlarmAppWidgetProvider.class);
+            WidgetUtils.updateWidget(this, MaterialYouNextAlarmAppWidgetProvider.class);
         }
     }
 
@@ -486,6 +526,14 @@ public class DeskClock extends AppCompatActivity
         }
     }
 
+    @Override
+    public void onMissedAlarmRepeatLimitSet(Alarm alarm, int missedAlarmRepeatLimit, String tag) {
+        final Fragment frag = getSupportFragmentManager().findFragmentByTag(tag);
+        if (frag instanceof AlarmClockFragment) {
+            ((AlarmClockFragment) frag).setMissedAlarmRepeatLimit(alarm, missedAlarmRepeatLimit);
+        }
+    }
+
     /**
      * Called by the VolumeCrescendoDurationDialogFragment class after the dialog is finished.
      */
@@ -505,6 +553,17 @@ public class DeskClock extends AppCompatActivity
         final Fragment frag = getSupportFragmentManager().findFragmentByTag(tag);
         if (frag instanceof AlarmClockFragment) {
             ((AlarmClockFragment) frag).setAlarmVolume(alarm, volumeValue);
+        }
+    }
+
+    /**
+     * Called by the LabelDialogFormat class after the dialog is finished.
+     */
+    @Override
+    public void onDialogCityNoteSet(String cityId, String note, String tag) {
+        final Fragment frag = getSupportFragmentManager().findFragmentByTag(tag);
+        if (frag instanceof ClockFragment) {
+            ((ClockFragment) frag).setCityNote(cityId, note);
         }
     }
 
@@ -561,6 +620,99 @@ public class DeskClock extends AppCompatActivity
         return false;
     }
 
+    /**
+     * Registers a SharedPreferences listener to monitor relevant app settings.
+     *
+     * <p>When a supported preference changes and its value is different from the cached one,
+     * the activity is recreated to reflect the updated setting.</p>
+     */
+    private void registerClockListener() {
+        // Important: we use a cached map of preference values to avoid unnecessary activity recreation
+        // when initializing the preference screen.
+        // Without this check, any preference change (even with the same value) triggers recreate(),
+        // which causes significant slowdown when opening the settings screen,
+        // especially on low-end devices due to how Preferences are initialized.
+        Map<String, Object> cachedValues = Utils.initCachedValues(SUPPORTED_PREF_KEYS, this::getPreferenceValue);
+
+        mPrefListener = (sharedPreferences, key) -> {
+            if (key == null || !cachedValues.containsKey(key)) {
+                return;
+            }
+
+            Object oldValue = cachedValues.get(key);
+            Object newValue = getPreferenceValue(key);
+
+            // Si la valeur n'a pas changé, on ne fait rien
+            if (newValue == null || newValue.equals(oldValue)) {
+                return;
+            }
+
+            cachedValues.put(key, newValue);
+
+            switch (key) {
+                case KEY_TAB_TITLE_VISIBILITY, KEY_TAB_INDICATOR, KEY_TAB_TO_DISPLAY, KEY_KEEP_SCREEN_ON,
+                     KEY_CLOCK_STYLE, KEY_CLOCK_DIAL, KEY_CLOCK_DIAL_MATERIAL, KEY_DISPLAY_CLOCK_SECONDS,
+                     KEY_CLOCK_SECOND_HAND, KEY_SORT_CITIES, KEY_ENABLE_CITY_NOTE, KEY_AUTO_HOME_CLOCK,
+                     KEY_HOME_TIME_ZONE, KEY_ENABLE_PER_ALARM_VOLUME, KEY_WEEK_START, KEY_SORT_TIMER,
+                     KEY_SW_VOLUME_UP_ACTION, KEY_SW_VOLUME_UP_ACTION_AFTER_LONG_PRESS,
+                     KEY_SW_VOLUME_DOWN_ACTION, KEY_SW_VOLUME_DOWN_ACTION_AFTER_LONG_PRESS,
+                     KEY_ESSENTIAL_PERMISSIONS_GRANTED -> mShouldRecreate = true;
+
+            }
+        };
+
+        mPrefs.registerOnSharedPreferenceChangeListener(mPrefListener);
+    }
+
+    /**
+     * Unregisters the internal listener to avoid memory leaks.
+     */
+    private void unregisterClockListener() {
+        if (mPrefListener != null) {
+            mPrefs.unregisterOnSharedPreferenceChangeListener(mPrefListener);
+        }
+    }
+
+    /**
+     * Retrieves the value of the preference associated with the given key from SharedPreferences,
+     * returning a suitable default value based on the key.
+     *
+     * @param key The preference key to retrieve.
+     */
+    private Object getPreferenceValue(String key) {
+        return switch (key) {
+            // Interface
+            case KEY_TAB_TITLE_VISIBILITY -> SettingsDAO.getTabTitleVisibility(mPrefs);
+            case KEY_TAB_INDICATOR -> SettingsDAO.isTabIndicatorDisplayed(mPrefs);
+            case KEY_TAB_TO_DISPLAY -> SettingsDAO.getTabToDisplay(mPrefs);
+            case KEY_KEEP_SCREEN_ON -> SettingsDAO.shouldScreenRemainOn(mPrefs);
+            // Clock
+            case KEY_CLOCK_STYLE -> SettingsDAO.getClockStyle(mPrefs);
+            case KEY_CLOCK_DIAL -> SettingsDAO.getClockDial(mPrefs);
+            case KEY_CLOCK_DIAL_MATERIAL -> SettingsDAO.getClockDialMaterial(mPrefs);
+            case KEY_DISPLAY_CLOCK_SECONDS -> SettingsDAO.areClockSecondsDisplayed(mPrefs);
+            case KEY_CLOCK_SECOND_HAND -> SettingsDAO.getClockSecondHand(mPrefs);
+            case KEY_SORT_CITIES -> SettingsDAO.getCitySorting(mPrefs);
+            case KEY_ENABLE_CITY_NOTE -> SettingsDAO.isCityNoteEnabled(mPrefs);
+            case KEY_AUTO_HOME_CLOCK -> SettingsDAO.getAutoShowHomeClock(mPrefs);
+            case KEY_HOME_TIME_ZONE -> SettingsDAO.getHomeTimeZone(this, mPrefs, TimeZone.getDefault());
+            // Alarm
+            case KEY_ENABLE_PER_ALARM_VOLUME -> SettingsDAO.isPerAlarmVolumeEnabled(mPrefs);
+            case KEY_WEEK_START -> SettingsDAO.getWeekdayOrder(mPrefs);
+            // Timer
+            case KEY_SORT_TIMER -> SettingsDAO.getTimerSortingPreference(mPrefs);
+            // StopWatch
+            case KEY_SW_VOLUME_UP_ACTION -> SettingsDAO.getVolumeUpActionForStopwatch(mPrefs);
+            case KEY_SW_VOLUME_UP_ACTION_AFTER_LONG_PRESS -> SettingsDAO.getVolumeUpActionAfterLongPressForStopwatch(mPrefs);
+            case KEY_SW_VOLUME_DOWN_ACTION -> SettingsDAO.getVolumeDownActionForStopwatch(mPrefs);
+            case KEY_SW_VOLUME_DOWN_ACTION_AFTER_LONG_PRESS -> SettingsDAO.getVolumeDownActionAfterLongPressForStopwatch(mPrefs);
+            // Permission
+            case KEY_ESSENTIAL_PERMISSIONS_GRANTED -> mPrefs.getBoolean(key, false);
+
+            default -> null;
+        };
+    }
+
     private final NavigationBarView.OnItemSelectedListener mNavigationListener = item -> {
         UiDataModel.Tab tab = null;
         int itemId = item.getItemId();
@@ -588,7 +740,7 @@ public class DeskClock extends AppCompatActivity
      * accordingly.
      */
     private void applyWindowInsets() {
-        InsetsUtils.doOnApplyWindowInsets(mDeskClockRootView, (v, insets, initialPadding) -> {
+        InsetsUtils.doOnApplyWindowInsets(mDeskClockRootView, (v, insets) -> {
             // Get the system bar and notch insets
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() |
                     WindowInsetsCompat.Type.displayCutout());
@@ -618,6 +770,9 @@ public class DeskClock extends AppCompatActivity
                         UiDataModel.getUiDataModel().setSelectedTab(UiDataModel.Tab.STOPWATCH);
                     }
                 }
+
+                // Consume the action to prevent it from being reused
+                intent.setAction(null);
             }
         }
     }
@@ -679,6 +834,28 @@ public class DeskClock extends AppCompatActivity
             ThemeUtils.keepScreenOn(this);
         } else {
             ThemeUtils.releaseKeepScreenOn(this);
+        }
+    }
+
+    /**
+     * Updates the runnable state when switching between tabs.
+     * <p>
+     * This method stops the runnable associated with the previously selected tab
+     * and starts the runnable for the newly selected tab, if applicable.
+     * It ensures that only the active tab's fragment continues its periodic updates.
+     *
+     * @param oldTab the previously selected tab
+     * @param newTab the newly selected tab
+     */
+    private void updateTabRunnable(UiDataModel.Tab oldTab, UiDataModel.Tab newTab) {
+        DeskClockFragment oldFragment = mFragmentTabPagerAdapter.getDeskClockFragment(oldTab.ordinal());
+        if (oldFragment instanceof RunnableFragment runnableOld) {
+            runnableOld.stopRunnable();
+        }
+
+        DeskClockFragment newFragment = mFragmentTabPagerAdapter.getDeskClockFragment(newTab.ordinal());
+        if (newFragment instanceof RunnableFragment runnableNew) {
+            runnableNew.startRunnable();
         }
     }
 
@@ -772,7 +949,12 @@ public class DeskClock extends AppCompatActivity
 
         @Override
         public void onPageSelected(int position) {
-            mFragmentTabPagerAdapter.getDeskClockFragment(position).selectTab();
+            DeskClockFragment fragment = mFragmentTabPagerAdapter.getDeskClockFragment(position);
+            fragment.selectTab();
+
+            if (fragment instanceof AlarmClockFragment alarmFragment) {
+                alarmFragment.hideSideButtonsOnlyAnimated();
+            }
         }
     }
 
@@ -850,6 +1032,9 @@ public class DeskClock extends AppCompatActivity
         public void selectedTabChanged(UiDataModel.Tab newSelectedTab) {
             // Update the view pager and tab layout to agree with the model.
             updateCurrentTab();
+
+            updateTabRunnable(mPreviousTab, newSelectedTab);
+            mPreviousTab = newSelectedTab;
 
             // Avoid sending events for the initial tab selection on launch and re-selecting a tab
             // after a configuration change.

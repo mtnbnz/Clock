@@ -6,14 +6,15 @@
 
 package com.best.deskclock.alarms;
 
-import static android.appwidget.AppWidgetManager.ACTION_APPWIDGET_UPDATE;
 import static android.content.Context.ALARM_SERVICE;
 
 import static com.best.deskclock.DeskClockApplication.getDefaultSharedPreferences;
 import static com.best.deskclock.settings.PreferencesDefaultValues.ALARM_SNOOZE_DURATION_DISABLED;
-import static com.best.deskclock.settings.PreferencesDefaultValues.ALARM_TIMEOUT_NEVER;
+import static com.best.deskclock.settings.PreferencesDefaultValues.DEFAULT_MISSED_ALARM_REPEAT_LIMIT;
+import static com.best.deskclock.settings.PreferencesDefaultValues.TIMEOUT_NEVER;
 import static com.best.deskclock.utils.AlarmUtils.ACTION_NEXT_ALARM_CHANGED_BY_CLOCK;
 
+import android.annotation.SuppressLint;
 import android.app.AlarmManager;
 import android.app.AlarmManager.AlarmClockInfo;
 import android.app.PendingIntent;
@@ -41,8 +42,11 @@ import com.best.deskclock.events.Events;
 import com.best.deskclock.provider.Alarm;
 import com.best.deskclock.provider.AlarmInstance;
 import com.best.deskclock.utils.AlarmUtils;
+import com.best.deskclock.utils.DeviceUtils;
 import com.best.deskclock.utils.LogUtils;
 import com.best.deskclock.utils.RingtoneUtils;
+import com.best.deskclock.utils.Utils;
+import com.best.deskclock.utils.WidgetUtils;
 
 import java.util.Calendar;
 import java.util.Collections;
@@ -130,10 +134,29 @@ public final class AlarmStateManager extends BroadcastReceiver {
     }
 
     /**
-     * Update the next alarm stored in framework. This value is also displayed in digital widgets,
-     * the clock tab and the screensaver in this app.
+     * Update the next alarm stored in framework.
+     * This value is displayed:
+     * <ul>
+     *     <li>in the Clock app (alarm tab and screensaver)</li>
+     *     <li>in the app's digital widgets (if accessible)</li>
+     * </ul>
+     * <p>
+     * Note: This method performs operations that require access to credential-protected storage.
+     * Therefore, if the user is currently locked (i.e., the device is in Direct Boot mode),
+     * the update will be skipped to avoid runtime exceptions when accessing system services
+     * like {@code AppWidgetManager}.</p>
      */
     private static void updateNextAlarm(Context context) {
+        Context storageContext = Utils.getSafeStorageContext(context);
+
+        // Important: Do not proceed if the user is locked (direct boot mode).
+        // Updating widgets may fail because credential-protected storage
+        // is not yet accessible, and AppWidgetManager.getAppWidgetIds() will throw an exception.
+        // Fix https://github.com/BlackyHawky/Clock/issues/369#issuecomment-3344303993
+        if (!DeviceUtils.isUserUnlocked(storageContext)) {
+            return;
+        }
+
         final AlarmInstance nextAlarm = getNextFiringAlarm(context);
 
         if (nextAlarm != null) {
@@ -148,12 +171,9 @@ public final class AlarmStateManager extends BroadcastReceiver {
             nextAlarmChangedIntent.setPackage(context.getPackageName());
             context.sendBroadcast(nextAlarmChangedIntent);
 
-            Intent appwidgetUpdateIntent = new Intent(ACTION_APPWIDGET_UPDATE);
-            appwidgetUpdateIntent.setPackage(context.getPackageName());
-            context.sendBroadcast(appwidgetUpdateIntent);
-        }, 300);
+            WidgetUtils.updateAllDigitalWidgets(context);
+        }, 600);
     }
-
 
     /**
      * Returns an alarm instance of an alarm that's going to fire next.
@@ -240,13 +260,20 @@ public final class AlarmStateManager extends BroadcastReceiver {
                 Alarm.updateAlarm(cr, alarm);
             }
         } else {
-            // Schedule the next repeating instance which may be before the current instance if a
-            // time jump has occurred. Otherwise, if the current instance is the next instance
-            // and has already been fired, schedule the subsequent instance.
-            AlarmInstance nextRepeatedInstance = alarm.createInstanceAfter(getCurrentTime());
-            if (instance.mAlarmState > AlarmInstance.FIRED_STATE
-                    && nextRepeatedInstance.getAlarmTime().equals(instance.getAlarmTime())) {
+            AlarmInstance nextRepeatedInstance;
+
+            if (SettingsDAO.isDismissButtonDisplayedWhenAlarmEnabled(getDefaultSharedPreferences(context))) {
+                // If the Dismiss button is permanently displayed, create the next instance only from the current instance.
                 nextRepeatedInstance = alarm.createInstanceAfter(instance.getAlarmTime());
+            } else {
+                // Schedule the next repeating instance which may be before the current instance if a
+                // time jump has occurred. Otherwise, if the current instance is the next instance
+                // and has already been fired, schedule the subsequent instance.
+                nextRepeatedInstance = alarm.createInstanceAfter(getCurrentTime());
+                if (instance.mAlarmState > AlarmInstance.FIRED_STATE
+                        && nextRepeatedInstance.getAlarmTime().equals(instance.getAlarmTime())) {
+                    nextRepeatedInstance = alarm.createInstanceAfter(instance.getAlarmTime());
+                }
             }
 
             LogUtils.i("Creating new instance for repeating alarm " + alarm.id + " at " +
@@ -404,8 +431,7 @@ public final class AlarmStateManager extends BroadcastReceiver {
         final SharedPreferences prefs = getDefaultSharedPreferences(context);
         final int snoozeMinutes = instance.mSnoozeDuration;
         Calendar newAlarmTime = Calendar.getInstance();
-        // If the "Snooze duration" setting has been set to "None" or if "Enable alarm snooze actions"
-        // is not enabled in the expanded alarm view, simply dismiss the alarm.
+        // If the "Snooze duration" setting has been set to "None" simply dismiss the alarm.
         if (snoozeMinutes == ALARM_SNOOZE_DURATION_DISABLED) {
             deleteInstanceAndUpdateParent(context, instance);
             return;
@@ -459,34 +485,59 @@ public final class AlarmStateManager extends BroadcastReceiver {
     public static void setMissedState(Context context, AlarmInstance instance) {
         LogUtils.i("Setting missed state to instance " + instance.mId);
 
-        // If the "Alarm silence" setting has not been set to "Never", we don't want alarms
-        // to be seen as missed but snoozed.
-        // This avoids having to create multiple alarms for the same reason.
-        if (instance.mAutoSilenceDuration != ALARM_TIMEOUT_NEVER) {
+        ContentResolver contentResolver = context.getContentResolver();
+        Alarm alarm = Alarm.getAlarm(contentResolver, instance.mAlarmId);
+        boolean isDeleteAfterUse = alarm != null && !alarm.daysOfWeek.isRepeating() && alarm.deleteAfterUse;
+
+        // If it's an occasional alarm, there's no need to mark it as missed; just delete it.
+        if (isDeleteAfterUse) {
+            deleteInstanceAndUpdateParent(context, instance);
+            return;
+        }
+
+        final int maxMissedAlarmRepeatCount = instance.mMissedAlarmRepeatLimit;
+
+        // If the "Silence after" or the "Repeat missed alarms" feature has been set to "Never"
+        // in Settings or in the expanded alarm view, the alarm is snoozed instead of marked as missed.
+        if (instance.mAutoSilenceDuration == TIMEOUT_NEVER
+                || maxMissedAlarmRepeatCount == Integer.parseInt(DEFAULT_MISSED_ALARM_REPEAT_LIMIT)) {
+
+            LogUtils.i("Alarm auto-silenced. Snoozing");
             setSnoozeState(context, instance, true);
             return;
         }
 
-        // Stop alarm if this instance is firing it
-        AlarmService.stopAlarm(context, instance);
+        instance.mMissedAlarmCurrentCount += 1;
 
-        // Check parent if it needs to reschedule, disable or delete itself
-        if (instance.mAlarmId != null) {
-            updateParentAlarm(context, instance);
+        // Snooze the alarm until the missed alarm repeat limit is reached.
+        if (instance.mMissedAlarmCurrentCount >= maxMissedAlarmRepeatCount) {
+            LogUtils.i("Max count reached. Marking instance as MISSED: " + instance.mId);
+
+            // Stop alarm if this instance is firing it
+            AlarmService.stopAlarm(context, instance);
+
+            // Check parent if it needs to reschedule, disable or delete itself
+            if (instance.mAlarmId != null) {
+                updateParentAlarm(context, instance);
+            }
+
+            // Update alarm state
+            instance.mAlarmState = AlarmInstance.MISSED_STATE;
+            AlarmInstance.updateInstance(contentResolver, instance);
+
+            // Setup instance notification and scheduling timers
+            AlarmNotifications.showMissedNotification(context, instance);
+            scheduleInstanceStateChange(
+                    context, instance.getMissedTimeToLive(), instance, AlarmInstance.DISMISSED_STATE);
+
+            cancelPowerOffAlarm(context, instance);
+            // Instance is not valid anymore, so find next alarm that will fire and notify system
+            updateNextAlarm(context);
+        } else {
+            LogUtils.i("Alarm auto-silenced. Snoozing (missedAlarmCurrentCount = "
+                    + instance.mMissedAlarmCurrentCount + ")");
+            setSnoozeState(context, instance, true);
         }
-
-        // Update alarm state
-        ContentResolver contentResolver = context.getContentResolver();
-        instance.mAlarmState = AlarmInstance.MISSED_STATE;
-        AlarmInstance.updateInstance(contentResolver, instance);
-
-        // Setup instance notification and scheduling timers
-        AlarmNotifications.showMissedNotification(context, instance);
-        scheduleInstanceStateChange(context, instance.getMissedTimeToLive(), instance, AlarmInstance.DISMISSED_STATE);
-
-        cancelPowerOffAlarm(context, instance);
-        // Instance is not valid anymore, so find next alarm that will fire and notify system
-        updateNextAlarm(context);
     }
 
     /**
@@ -507,6 +558,7 @@ public final class AlarmStateManager extends BroadcastReceiver {
 
         // Update alarm in database
         final ContentResolver contentResolver = context.getContentResolver();
+        instance.mMissedAlarmCurrentCount = 0;
         instance.mAlarmState = AlarmInstance.PREDISMISSED_STATE;
         AlarmInstance.updateInstance(contentResolver, instance);
 
@@ -519,6 +571,14 @@ public final class AlarmStateManager extends BroadcastReceiver {
             updateParentAlarm(context, instance);
         }
 
+        // When the alarm is dismissed from the notification and all days of the week are selected,
+        // correctly display the next occurrence in the alarm item.
+        final SharedPreferences prefs = getDefaultSharedPreferences(context);
+        final Alarm alarm = Alarm.getAlarm(contentResolver, instance.mAlarmId);
+        if (alarm != null && !alarm.isRepeatDayStyleEnabled(prefs)) {
+            alarm.enableRepeatDayStyleIfAllDaysSelected(prefs);
+        }
+
         cancelPowerOffAlarm(context, instance);
         updateNextAlarm(context);
     }
@@ -528,9 +588,17 @@ public final class AlarmStateManager extends BroadcastReceiver {
      */
     public static void setDismissState(Context context, AlarmInstance instance) {
         LogUtils.i("Setting dismissed state to instance " + instance.mId);
+        instance.mMissedAlarmCurrentCount = 0;
         instance.mAlarmState = AlarmInstance.DISMISSED_STATE;
         final ContentResolver contentResolver = context.getContentResolver();
         AlarmInstance.updateInstance(contentResolver, instance);
+
+        // Clean up styled repeat day if needed
+        Alarm alarm = Alarm.getAlarm(contentResolver, instance.mAlarmId);
+        final SharedPreferences prefs = getDefaultSharedPreferences(context);
+        if (alarm != null && alarm.isRepeatDayStyleEnabled(prefs)) {
+            alarm.removeRepeatDayStyle(prefs);
+        }
 
         cancelPowerOffAlarm(context, instance);
     }
@@ -847,23 +915,54 @@ public final class AlarmStateManager extends BroadcastReceiver {
         return new Intent(context, AlarmStateManager.class).setAction(INDICATOR_ACTION);
     }
 
+    /**
+     * Attempts to set a power-off alarm on supported devices.
+     * <p>
+     * On certain models (e.g., ZTE Libero 5G II), this action is blocked by the system.
+     * This method performs a compatibility check before sending the broadcast.</p>
+     */
+
     private static void setPowerOffAlarm(Context context, AlarmInstance instance) {
-        LogUtils.i("Set next power off alarm : instance id " + instance.mId);
-        Intent intent = new Intent(ACTION_SET_POWEROFF_ALARM);
-        intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
-        intent.setPackage(POWER_OFF_ALARM_PACKAGE);
-        intent.putExtra(TIME, instance.getAlarmTime().getTimeInMillis());
-        context.sendBroadcast(intent);
+        if (DeviceUtils.isPowerOffAlarmUnSupported()) {
+            return;
+        }
+
+        try {
+            LogUtils.i("Set next power off alarm : instance id " + instance.mId);
+            Intent intent = new Intent(ACTION_SET_POWEROFF_ALARM);
+            intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+            intent.setPackage(POWER_OFF_ALARM_PACKAGE);
+            intent.putExtra(TIME, instance.getAlarmTime().getTimeInMillis());
+            context.sendBroadcast(intent);
+        } catch (SecurityException e) {
+            LogUtils.e("Failed to send power off alarm broadcast: " + e);
+        }
     }
 
+    /**
+     * Attempts to cancel a previously set power-off alarm on supported devices.
+     * <p>
+     * Some manufacturers (e.g., ZTE Libero 5G II) do not support this broadcast,
+     * in which case the method safely aborts and logs a warning.
+     */
     private static void cancelPowerOffAlarm(Context context, AlarmInstance instance) {
-        Intent intent = new Intent(ACTION_CANCEL_POWEROFF_ALARM);
-        intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
-        intent.putExtra(TIME, instance.getAlarmTime().getTimeInMillis());
-        intent.setPackage(POWER_OFF_ALARM_PACKAGE);
-        context.sendBroadcast(intent);
+        if (DeviceUtils.isPowerOffAlarmUnSupported()) {
+            LogUtils.w("Power-off alarm cancel is not supported on this device.");
+            return;
+        }
+
+        try {
+            Intent intent = new Intent(ACTION_CANCEL_POWEROFF_ALARM);
+            intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+            intent.putExtra(TIME, instance.getAlarmTime().getTimeInMillis());
+            intent.setPackage(POWER_OFF_ALARM_PACKAGE);
+            context.sendBroadcast(intent);
+        } catch (SecurityException e) {
+            LogUtils.e("Failed to cancel power off alarm broadcast: " + e);
+        }
     }
 
+    @SuppressLint({"WakelockTimeout", "Wakelock"})
     @Override
     public void onReceive(final Context context, final Intent intent) {
         if (INDICATOR_ACTION.equals(intent.getAction())) {
@@ -872,7 +971,7 @@ public final class AlarmStateManager extends BroadcastReceiver {
 
         final PendingResult result = goAsync();
         final PowerManager.WakeLock wl = AlarmAlertWakeLock.createPartialWakeLock(context);
-        wl.acquire(10000L);
+        wl.acquire();
         AsyncHandler.post(() -> {
             handleIntent(context, intent);
             result.finish();

@@ -83,8 +83,7 @@
     <string name="snooze_duration_title" msgid="1097309861110780483">"Lama penundaan"</string>
     <string name="crescendo_duration_title" msgid="8606408542726189528">"Keraskan volume secara bertahap"</string>
     <string name="auto_silence_title" msgid="2012754009554434544">"Matikan setelah"</string>
-    <string name="auto_silence_never" msgid="4821982647348750809">"Tidak Pernah"</string>
-    <string name="auto_silence_1_minute">1 menit</string>
+    <string name="label_never" msgid="4821982647348750809">"Tidak Pernah"</string>
     <string name="label_off">Nonaktif</string>
     <string name="week_start_title" msgid="4268917518596832096">"Hari pertama"</string>
     <string name="week_start_saturday">Sabtu</string>
@@ -256,6 +255,8 @@
         <item msgid="3027153773466391728">"Fiji"</item>
         <item msgid="5911600083231840181">"Tonga"</item>
         <item msgid="5176858645450908751">"Jakarta"</item>
+        <item>"Riyadh"</item>
+        <item>"Reykjavik"</item>
     </string-array>
     <string name="shortcut_new_alarm_short" msgid="3490418929139725538">"Alarm baru"</string>
     <string name="shortcut_new_alarm_long" msgid="4778064830147981089">"Buat alarm baru"</string>

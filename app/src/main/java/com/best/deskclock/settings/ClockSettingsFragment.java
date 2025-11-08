@@ -2,12 +2,16 @@
 
 package com.best.deskclock.settings;
 
-import static com.best.deskclock.DeskClock.REQUEST_CHANGE_SETTINGS;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_AUTO_HOME_CLOCK;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_CLOCK_DIAL;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_CLOCK_DIAL_MATERIAL;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_CLOCK_SECOND_HAND;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_CLOCK_STYLE;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_DATE_TIME;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_DISPLAY_CLOCK_SECONDS;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_ENABLE_CITY_NOTE;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_HOME_TIME_ZONE;
+import static com.best.deskclock.settings.PreferencesKeys.KEY_SORT_CITIES;
 
 import android.content.Context;
 import android.content.Intent;
@@ -20,6 +24,7 @@ import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
 
 import com.best.deskclock.R;
+import com.best.deskclock.data.DataModel;
 import com.best.deskclock.data.SettingsDAO;
 import com.best.deskclock.data.TimeZones;
 import com.best.deskclock.utils.Utils;
@@ -27,8 +32,17 @@ import com.best.deskclock.utils.Utils;
 public class ClockSettingsFragment extends ScreenFragment
         implements Preference.OnPreferenceChangeListener, Preference.OnPreferenceClickListener {
 
+    String[] mClockStyleValues;
+    String mAnalogClock;
+    String mMaterialAnalogClock;
+
     ListPreference mClockStylePref;
+    ListPreference mClockDialPref;
+    ListPreference mClockDialMaterialPref;
+    ListPreference mClockSecondHandPref;
     SwitchPreferenceCompat mDisplayClockSecondsPref;
+    SwitchPreferenceCompat mEnableCityNotePref;
+    ListPreference mSortCitiesPref;
     SwitchPreferenceCompat mAutoHomeClockPref;
     ListPreference mHomeTimeZonePref;
     Preference mDateTimePref;
@@ -45,10 +59,19 @@ public class ClockSettingsFragment extends ScreenFragment
         addPreferencesFromResource(R.xml.settings_clock);
 
         mClockStylePref = findPreference(KEY_CLOCK_STYLE);
+        mClockDialPref = findPreference(KEY_CLOCK_DIAL);
+        mClockDialMaterialPref = findPreference(KEY_CLOCK_DIAL_MATERIAL);
         mDisplayClockSecondsPref = findPreference(KEY_DISPLAY_CLOCK_SECONDS);
+        mClockSecondHandPref = findPreference(KEY_CLOCK_SECOND_HAND);
+        mEnableCityNotePref = findPreference(KEY_ENABLE_CITY_NOTE);
+        mSortCitiesPref = findPreference(KEY_SORT_CITIES);
         mAutoHomeClockPref = findPreference(KEY_AUTO_HOME_CLOCK);
         mHomeTimeZonePref = findPreference(KEY_HOME_TIME_ZONE);
         mDateTimePref = findPreference(KEY_DATE_TIME);
+
+        mClockStyleValues = getResources().getStringArray(R.array.clock_style_values);
+        mAnalogClock = mClockStyleValues[0];
+        mMaterialAnalogClock = mClockStyleValues[1];
 
         setupPreferences();
     }
@@ -56,22 +79,38 @@ public class ClockSettingsFragment extends ScreenFragment
     @Override
     public boolean onPreferenceChange(Preference pref, Object newValue) {
         switch (pref.getKey()) {
-            case KEY_CLOCK_STYLE, KEY_HOME_TIME_ZONE -> {
+            case KEY_CLOCK_STYLE -> {
+                final int clockIndex = mClockStylePref.findIndexOfValue((String) newValue);
+                mClockStylePref.setSummary(mClockStylePref.getEntries()[clockIndex]);
+                mClockDialPref.setVisible(newValue.equals(mAnalogClock));
+                mClockDialMaterialPref.setVisible(newValue.equals(mMaterialAnalogClock));
+                mClockSecondHandPref.setVisible(newValue.equals(mAnalogClock)
+                        && SettingsDAO.areClockSecondsDisplayed(mPrefs));
+            }
+
+            case KEY_CLOCK_DIAL, KEY_CLOCK_DIAL_MATERIAL, KEY_CLOCK_SECOND_HAND, KEY_HOME_TIME_ZONE,
+                 KEY_SORT_CITIES -> {
                 final ListPreference preference = (ListPreference) pref;
                 final int index = preference.findIndexOfValue((String) newValue);
                 preference.setSummary(preference.getEntries()[index]);
             }
 
-            case KEY_DISPLAY_CLOCK_SECONDS -> Utils.setVibrationTime(requireContext(), 50);
+            case KEY_DISPLAY_CLOCK_SECONDS -> {
+                mClockSecondHandPref.setVisible((boolean) newValue
+                        && SettingsDAO.getClockStyle(mPrefs) == DataModel.ClockStyle.ANALOG);
+
+                Utils.setVibrationTime(requireContext(), 50);
+            }
 
             case KEY_AUTO_HOME_CLOCK -> {
                 mHomeTimeZonePref.setEnabled((boolean) newValue);
+
                 Utils.setVibrationTime(requireContext(), 50);
             }
+
+            case KEY_ENABLE_CITY_NOTE -> Utils.setVibrationTime(requireContext(), 50);
         }
 
-        // Set result so DeskClock knows to refresh itself
-        requireActivity().setResult(REQUEST_CHANGE_SETTINGS);
         return true;
     }
 
@@ -96,7 +135,25 @@ public class ClockSettingsFragment extends ScreenFragment
         mClockStylePref.setSummary(mClockStylePref.getEntry());
         mClockStylePref.setOnPreferenceChangeListener(this);
 
+        mClockDialPref.setVisible(mClockStylePref.getValue().equals(mAnalogClock));
+        mClockDialPref.setSummary(mClockDialPref.getEntry());
+        mClockDialPref.setOnPreferenceChangeListener(this);
+
+        mClockDialMaterialPref.setVisible(mClockStylePref.getValue().equals(mMaterialAnalogClock));
+        mClockDialMaterialPref.setSummary(mClockDialMaterialPref.getEntry());
+        mClockDialMaterialPref.setOnPreferenceChangeListener(this);
+
         mDisplayClockSecondsPref.setOnPreferenceChangeListener(this);
+
+        mClockSecondHandPref.setVisible(mClockStylePref.getValue().equals(mAnalogClock)
+                && SettingsDAO.areClockSecondsDisplayed(mPrefs));
+        mClockSecondHandPref.setSummary(mClockSecondHandPref.getEntry());
+        mClockSecondHandPref.setOnPreferenceChangeListener(this);
+
+        mSortCitiesPref.setSummary(mSortCitiesPref.getEntry());
+        mSortCitiesPref.setOnPreferenceChangeListener(this);
+
+        mEnableCityNotePref.setOnPreferenceChangeListener(this);
 
         mAutoHomeClockPref.setOnPreferenceChangeListener(this);
 

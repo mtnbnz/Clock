@@ -99,8 +99,7 @@
     <string name="snooze_duration_title" msgid="1097309861110780483">"משך הנדנוד"</string>
     <string name="crescendo_duration_title" msgid="8606408542726189528">"הגבר בהדרגה את עוצמת הקול"</string>
     <string name="auto_silence_title" msgid="2012754009554434544">"השתק לאחר"</string>
-    <string name="auto_silence_never" msgid="4821982647348750809">"לעולם לא"</string>
-    <string name="auto_silence_1_minute">1 דקה</string>
+    <string name="label_never" msgid="4821982647348750809">"לעולם לא"</string>
     <string name="label_off">כיבוי</string>
     <string name="week_start_title" msgid="4268917518596832096">"השבוע מתחיל ב-"</string>
     <string name="week_start_saturday">שבת</string>
@@ -272,6 +271,8 @@
         <item msgid="3027153773466391728">"פיג\'י"</item>
         <item msgid="5911600083231840181">"טונגה"</item>
         <item msgid="5176858645450908751">"ג\'אקארטה"</item>
+        <item>"ריאד"</item>
+        <item>"רייקיאוויק"</item>
     </string-array>
     <string name="shortcut_new_alarm_short" msgid="3490418929139725538">"התראה חדשה"</string>
     <string name="shortcut_new_alarm_long" msgid="4778064830147981089">"יצירת התראה חדשה"</string>

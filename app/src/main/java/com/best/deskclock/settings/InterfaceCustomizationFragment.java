@@ -2,7 +2,6 @@
 
 package com.best.deskclock.settings;
 
-import static com.best.deskclock.DeskClock.REQUEST_CHANGE_SETTINGS;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_ACCENT_COLOR;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_AUTO_NIGHT_ACCENT_COLOR;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_CARD_BACKGROUND;
@@ -20,27 +19,18 @@ import static com.best.deskclock.settings.PreferencesKeys.KEY_TOOLBAR_TITLE;
 import static com.best.deskclock.settings.PreferencesKeys.KEY_VIBRATIONS;
 import static com.best.deskclock.utils.Utils.ACTION_LANGUAGE_CODE_CHANGED;
 
-import android.appwidget.AppWidgetManager;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
 
-import com.best.alarmclock.WidgetUtils;
-import com.best.alarmclock.materialyouwidgets.MaterialYouDigitalAppWidgetProvider;
-import com.best.alarmclock.materialyouwidgets.MaterialYouNextAlarmAppWidgetProvider;
-import com.best.alarmclock.materialyouwidgets.MaterialYouVerticalDigitalAppWidgetProvider;
-import com.best.alarmclock.standardwidgets.DigitalAppWidgetProvider;
-import com.best.alarmclock.standardwidgets.NextAlarmAppWidgetProvider;
-import com.best.alarmclock.standardwidgets.VerticalDigitalAppWidgetProvider;
 import com.best.deskclock.R;
 import com.best.deskclock.data.SettingsDAO;
-import com.best.deskclock.utils.ThemeUtils;
+import com.best.deskclock.utils.DeviceUtils;
 import com.best.deskclock.utils.Utils;
+import com.best.deskclock.utils.WidgetUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -108,74 +98,31 @@ public class InterfaceCustomizationFragment extends ScreenFragment
         super.onResume();
 
         if (isLanguageChanged) {
-            updateAllDigitalWidgets(requireContext());
+            WidgetUtils.updateAllDigitalWidgets(requireContext());
             isLanguageChanged = false;
         }
     }
 
     @Override
     public boolean onPreferenceChange(Preference pref, Object newValue) {
-        final boolean isNight = ThemeUtils.isNight(requireActivity().getResources());
         switch (pref.getKey()) {
-            case KEY_THEME -> {
-                final int index = mThemePref.findIndexOfValue((String) newValue);
-                mThemePref.setSummary(mThemePref.getEntries()[index]);
-                switch (index) {
-                    case 0 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
-                    case 1 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-                    case 2 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-                }
-            }
-
-            case KEY_DARK_MODE, KEY_NIGHT_ACCENT_COLOR -> {
+            case KEY_THEME, KEY_ACCENT_COLOR, KEY_DARK_MODE, KEY_NIGHT_ACCENT_COLOR,
+                 KEY_TAB_TITLE_VISIBILITY, KEY_TAB_TO_DISPLAY  -> {
                 final ListPreference listPreference = (ListPreference) pref;
-                final int darkModeIndex = listPreference.findIndexOfValue((String) newValue);
-                listPreference.setSummary(listPreference.getEntries()[darkModeIndex]);
-                if (isNight) {
-                    recreateActivity();
-                }
-            }
-
-            case KEY_ACCENT_COLOR -> {
-                final int index = mAccentColorPref.findIndexOfValue((String) newValue);
-                mAccentColorPref.setSummary(mAccentColorPref.getEntries()[index]);
-                recreateActivity();
+                final int index = listPreference.findIndexOfValue((String) newValue);
+                listPreference.setSummary(listPreference.getEntries()[index]);
             }
 
             case KEY_AUTO_NIGHT_ACCENT_COLOR, KEY_CARD_BACKGROUND, KEY_CARD_BORDER,
-                 KEY_FADE_TRANSITIONS -> {
-                recreateActivity();
-                Utils.setVibrationTime(requireContext(), 50);
-            }
+                 KEY_FADE_TRANSITIONS, KEY_VIBRATIONS, KEY_TOOLBAR_TITLE, KEY_TAB_INDICATOR,
+                 KEY_KEEP_SCREEN_ON ->
+                    Utils.setVibrationTime(requireContext(), 50);
 
             case KEY_CUSTOM_LANGUAGE_CODE -> {
                 final int index = mCustomLanguageCodePref.findIndexOfValue((String) newValue);
                 mCustomLanguageCodePref.setSummary(mCustomLanguageCodePref.getEntries()[index]);
                 requireContext().sendBroadcast(new Intent(ACTION_LANGUAGE_CODE_CHANGED));
                 isLanguageChanged = true;
-                recreateActivity();
-            }
-
-            case KEY_TAB_TO_DISPLAY -> {
-                final int index = mTabToDisplayPref.findIndexOfValue((String) newValue);
-                mTabToDisplayPref.setSummary(mTabToDisplayPref.getEntries()[index]);
-                // Set result so DeskClock knows to refresh itself
-                requireActivity().setResult(REQUEST_CHANGE_SETTINGS);
-            }
-
-            case KEY_VIBRATIONS, KEY_TOOLBAR_TITLE -> Utils.setVibrationTime(requireContext(), 50);
-
-            case KEY_TAB_TITLE_VISIBILITY -> {
-                final int index = mTabTitleVisibilityPref.findIndexOfValue((String) newValue);
-                mTabTitleVisibilityPref.setSummary(mTabTitleVisibilityPref.getEntries()[index]);
-                // Set result so DeskClock knows to refresh itself
-                requireActivity().setResult(REQUEST_CHANGE_SETTINGS);
-            }
-
-            case KEY_TAB_INDICATOR, KEY_KEEP_SCREEN_ON -> {
-                Utils.setVibrationTime(requireContext(), 50);
-                // Set result so DeskClock knows to refresh itself
-                requireActivity().setResult(REQUEST_CHANGE_SETTINGS);
             }
 
         }
@@ -223,7 +170,7 @@ public class InterfaceCustomizationFragment extends ScreenFragment
         mTabToDisplayPref.setSummary(mTabToDisplayPref.getEntry());
         mTabToDisplayPref.setOnPreferenceChangeListener(this);
 
-        mVibrationPref.setVisible(Utils.hasVibrator(requireContext()));
+        mVibrationPref.setVisible(DeviceUtils.hasVibrator(requireContext()));
         mVibrationPref.setOnPreferenceChangeListener(this);
 
         mFadeTransitionsPref.setOnPreferenceChangeListener(this);
@@ -272,20 +219,6 @@ public class InterfaceCustomizationFragment extends ScreenFragment
                 listPreference.setEntryValues(sortedValues);
             }
         }
-    }
-
-    /**
-     * Helper method to update all digital widgets.
-     */
-    private void updateAllDigitalWidgets(Context context) {
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-
-        WidgetUtils.updateWidget(context, appWidgetManager, DigitalAppWidgetProvider.class);
-        WidgetUtils.updateWidget(context, appWidgetManager, NextAlarmAppWidgetProvider.class);
-        WidgetUtils.updateWidget(context, appWidgetManager, VerticalDigitalAppWidgetProvider.class);
-        WidgetUtils.updateWidget(context, appWidgetManager, MaterialYouDigitalAppWidgetProvider.class);
-        WidgetUtils.updateWidget(context, appWidgetManager, MaterialYouNextAlarmAppWidgetProvider.class);
-        WidgetUtils.updateWidget(context, appWidgetManager, MaterialYouVerticalDigitalAppWidgetProvider.class);
     }
 
     /**
